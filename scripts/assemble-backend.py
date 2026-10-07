@@ -23,7 +23,10 @@ replacements=classes("controller-classes")
 for folder in ("reporting-web", "web-overrides"):
     for page in (ROOT/folder).rglob("*.jsp"):
         replacements["web/module/"+page.relative_to(ROOT/folder).as_posix()]=page.read_bytes()
-replacements["lib/reporting-api-2.1.0.jar"]=patched_zip(api,classes("backend-classes"))
+api_replacements=classes("backend-classes")
+for resource in (ROOT/"reporting-resources").rglob("*"):
+    if resource.is_file(): api_replacements[resource.relative_to(ROOT/"reporting-resources").as_posix()]=resource.read_bytes()
+replacements["lib/reporting-api-2.1.0.jar"]=patched_zip(api,api_replacements)
 (ROOT/"backend/reporting-2.1.0.omod").write_bytes(patched_zip(original,replacements))
 shutil.copytree(ROOT/"core-classes",ROOT/"backend/core/WEB-INF/classes",dirs_exist_ok=True)
 print("Prepared patched reporting module and core property editor")

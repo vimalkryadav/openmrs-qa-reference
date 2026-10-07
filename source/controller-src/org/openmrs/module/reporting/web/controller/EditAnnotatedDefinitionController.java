@@ -69,7 +69,8 @@ public class EditAnnotatedDefinitionController {
                 d = query;
             }
         }
-		return d;
+        // Spring binds submitted metadata before validation; keep the stored definition untouched.
+        return DefinitionUtil.clone(d);
     }
 	
 	/**
@@ -101,7 +102,9 @@ public class EditAnnotatedDefinitionController {
 			boolean isParameter = "t".equals(request.getParameter(prefix + ".allowAtEvaluation"));
 			try {
 				Object valToSet;
-                if (definition instanceof org.openmrs.module.reporting.data.ConvertedDataDefinition && (fieldName.equals("definitionToConvert") || fieldName.equals("converters"))) {
+                if (org.openmrs.module.reporting.web.util.RowObjectDefinitionEditor.supports(definition, fieldName)) {
+                    valToSet = org.openmrs.module.reporting.web.util.RowObjectDefinitionEditor.parse((org.openmrs.module.reporting.dataset.definition.RowPerObjectDataSetDefinition)definition, fieldName, request.getParameter(valParamName));
+                } else if (definition instanceof org.openmrs.module.reporting.data.ConvertedDataDefinition && (fieldName.equals("definitionToConvert") || fieldName.equals("converters"))) {
                     valToSet = org.openmrs.module.reporting.web.util.ConvertedDefinitionEditor.parse(definition, fieldName, request.getParameter(valParamName));
                 } else {
                     valToSet = WidgetUtil.getFromRequest(request, valParamName, p.getField());
@@ -110,7 +113,9 @@ public class EditAnnotatedDefinitionController {
 				Class<?> fieldType = p.getField().getType();
 				if (ReflectionUtil.isCollection(p.getField())) {
 					collectionType = (Class<? extends Collection<?>>) p.getField().getType();
-					fieldType = (Class<?>) ReflectionUtil.getGenericTypes(p.getField())[0];
+					java.lang.reflect.Type elementType = ReflectionUtil.getGenericTypes(p.getField())[0];
+                    fieldType = elementType instanceof Class ? (Class<?>)elementType
+                            : (Class<?>)((java.lang.reflect.ParameterizedType)elementType).getRawType();
 				}
 				
 				if (isParameter) {
@@ -137,6 +142,10 @@ public class EditAnnotatedDefinitionController {
             }
 		}
 	
+        if (definition instanceof org.openmrs.module.reporting.dataset.definition.RowPerObjectDataSetDefinition) {
+            try { org.openmrs.module.reporting.web.util.RowObjectDefinitionEditor.validate((org.openmrs.module.reporting.dataset.definition.RowPerObjectDataSetDefinition)definition); }
+            catch (IllegalArgumentException error) { bindingResult.rejectValue("sortCriteria", "reporting.error.invalidValue", error.getMessage()); }
+        }
 		if (definition.getName() == null || definition.getName().trim().isEmpty()) {
             bindingResult.rejectValue("name", "error.null", "Cannot be empty or null");
         }
@@ -159,6 +168,10 @@ public class EditAnnotatedDefinitionController {
 	}
 	
 	private void addPropertiesToModel(ModelMap model, Definition definition) {
+        if (definition instanceof org.openmrs.module.reporting.dataset.definition.RowPerObjectDataSetDefinition) {
+            try { model.addAttribute("objectEditorJson", org.openmrs.module.reporting.web.util.RowObjectDefinitionEditor.model((org.openmrs.module.reporting.dataset.definition.RowPerObjectDataSetDefinition)definition)); }
+            catch (Exception error) { throw new IllegalArgumentException("Unable to configure object dataset", error); }
+        }
 		if (definition instanceof org.openmrs.module.reporting.data.ConvertedDataDefinition) {
             try { model.addAttribute("convertedEditorJson", org.openmrs.module.reporting.web.util.ConvertedDefinitionEditor.model(definition)); }
             catch (Exception error) { throw new IllegalArgumentException("Unable to configure converted definition", error); }

@@ -228,6 +228,16 @@ public class ReferenceBatchRegression {
         checks++;
         if (!raw.equals(org.openmrs.module.reporting.propertyeditor.MappedEditor.decodeTransportXml(raw))) throw new AssertionError("raw XML entities changed");
         checks++;
+        final ReportDesign excelDesign = new ReportDesign();
+        org.openmrs.module.reporting.report.renderer.ExcelTemplateRenderer excelRenderer = new org.openmrs.module.reporting.report.renderer.ExcelTemplateRenderer() {
+            @Override public ReportDesign getDesign(String uuid) { return excelDesign; }
+        };
+        check(excelRenderer.getRenderedContentType(detailRequest).contains("openxmlformats"), "Excel fallback MIME matches XSSFWorkbook");
+        org.openmrs.module.reporting.report.ReportDesignResource template = new org.openmrs.module.reporting.report.ReportDesignResource();
+        template.setName("template"); template.setContents(new byte[]{'P','K',3,4}); excelDesign.addResource(template);
+        check(excelRenderer.getRenderedContentType(detailRequest).contains("openxmlformats"), "ZIP template MIME");
+        template.setContents(new byte[]{(byte)0xd0,(byte)0xcf,0x11});
+        check(excelRenderer.getRenderedContentType(detailRequest).equals("application/vnd.ms-excel"), "OLE template keeps XLS MIME");
         LoggingReportProcessor processor = new LoggingReportProcessor();
         Report saved = new Report(); saved.setRenderedOutput(new byte[]{1, 2});
         processor.process(saved, new Properties()); checks++;

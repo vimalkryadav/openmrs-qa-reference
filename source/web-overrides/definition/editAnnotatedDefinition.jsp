@@ -148,7 +148,7 @@
 														</span>
 													</span>
 													<span id="fixedValue${p.field.name}" style="display:none;">
-														<c:choose><c:when test="${not empty convertedEditorJson and (p.field.name == 'definitionToConvert' or p.field.name == 'converters')}"><%@ include file="convertedDefinitionFields.jsp" %></c:when><c:otherwise><wgt:widget id="${p.field.name}" name="parameter.${p.field.name}.value" object="${definition}" property="${p.field.name}"/></c:otherwise></c:choose>
+														<c:choose><c:when test="${not empty objectEditorJson and (p.field.name == 'columnDefinitions' or p.field.name == 'sortCriteria' or p.field.name == 'rowFilters')}"><%@ include file="rowObjectDefinitionFields.jsp" %></c:when><c:when test="${not empty convertedEditorJson and (p.field.name == 'definitionToConvert' or p.field.name == 'converters')}"><%@ include file="convertedDefinitionFields.jsp" %></c:when><c:otherwise><wgt:widget id="${p.field.name}" name="parameter.${p.field.name}.value" object="${definition}" property="${p.field.name}"/></c:otherwise></c:choose>
 													</span>
 													<spring:bind path="${p.field.name}">
 														<c:if test="${status.errorMessage != ''}">

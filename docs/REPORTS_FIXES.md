@@ -52,3 +52,31 @@ The first batch source commit is `9b5de34`. The next local commit extends the sa
 `tests/headless-editors.mjs` passes all five editor paths on fresh fixtures. Its output is `test-results/editors/browser-results.json`; `cohort-before.tsv` and `cohort-after.tsv` prove the existing clinical cohort was preserved. `tests/cleanup-editors.py` confirms zero owned definition/design/request UUID and prefix residuals. The updated focused Java suite passes 40 assertions. The rerun first-batch fixtures are also cleaned with zero recorded residual counts. Earlier exploratory selector/timing failures remain under ignored evidence and are not counted as application failures.
 
 The direct patient-dataset preview intentionally samples the first 50 active patients before applying filters. A valid filter selecting a patient outside that sample therefore gives an empty preview; the verification fixture uses the first active patient and separately runs a full one-patient report. This is a preview scope limit, not evidence that later patient records are absent from the database.
+
+## Object dataset editor batch
+
+B-04 now has fixed-value controls for named, ordered columns, typed saved data definitions and parameter mappings, converter chains, ordered ascending/descending sort rules, and typed row filters. Column rename retargets its sort rule; removal removes dependent sorts. Both apps use the same inline source/mapping control contract. Dynamic whole-column/sort collections retain the existing generic Parameter mode; this change does not add a runtime widget for those structured collections.
+
+The implementation reuses core `addColumn` adapters, mapped definitions, converters and serialized-object storage. Observation data, visit data and visit queries needed their missing typed persisters, DAO registrations and UUID serializers. No schema change or clinical-data write is involved. The annotated editor now binds to a copied definition, handles parameterized generic collection elements, validates source/type/name/sort inputs, and retains stored values on invalid submissions. Metadata mappings resolve real objects even when htmlwidgets lacks a handler (for example VisitType). Dates use the current session's accepted date format; collection controls retain their element types. Invalid JSON prevents submission and receives focus.
+
+`tests/headless-objects.mjs` proves the three dataset variants with actual controls, save/reopen/save, Date mappings, StringConverter/AgeConverter, ordering and filters, bounded CSV results, rename/removal, Cancel and keyboard activation. Duplicate names and invalid dates return HTTP400 without changing the saved columns. The populated fixtures run through a report whose base cohort is one existing patient; SQL observation and encounter filters also limit their object IDs to two. Standalone object previews use the same first-50-active-patient sample as patient/Logic previews, and the empty result is a valid outcome with no invented headers or values.
+
+Additional checks in `tests/headless-object-extras.mjs` cover a VisitType collection mapping across saves, malformed JSON preservation and actual query evaluation. `test-results/objects` contains the result JSONs, screenshots, accessibility trees, saved definition XML and downloaded workbooks/CSVs. Exploratory failures are kept separately and are not counted as passing evidence.
+
+ExcelTemplateRenderer's resource-free fallback produces an XLSX workbook; its filename/MIME now match. Uploaded XLSX templates also use XLSX metadata, while OLE/XLS templates retain XLS metadata. Three focused assertions cover these paths. The headless fallback download has the correct extension/MIME, ZIP bytes and decoded cell value7.
+
+A-09 is **currently passing, original cause unresolved**. The same `XlsReportRenderer` design is enabled, run, disabled, saved, reopened and run again. Captured database configuration shows the same design UUID with the property present then absent; decoded workbooks respectively include and omit the dataset title. This does not establish the cause of the earlier stale output or a link to the separate edited-dataset observation. See `header-*-configuration.tsv`, `metadata-cells.json` and the exact request UUIDs in `extras-results.json`.
+
+Reproduce the new bounded batch on an overlaid native runtime:
+
+```sh
+.venv/bin/python tests/setup-objects.py
+node tests/headless-objects.mjs
+node tests/headless-object-extras.mjs
+python3 tests/decode-object-extras.py
+.venv/bin/python tests/cleanup-objects.py
+```
+
+The paired renderer evidence for commit `434c0a8` is now final: both apps passed9/9 cases in `openmrs-native-data/reports-fixes-20261008/clone-batch2/{reference,clone}-renderer-results-final.json`. Actual generic upload/reopen and CohortDetail HTML/XLSX populated/empty output are proven, with semantic comparisons in `decoded-renderer-comparison-final.json`. Malformed/unsupported cases intentionally finish FAILED with controlled errors. Earlier overwritten result files are retained but are not authoritative. The six sticker fields and barcode also match in `sticker-comparison.json`.
+
+The final B-04 suite passes10/10 browser cases and the extra suite passes4/4, with no browser page errors. The workbook decoder confirms the fallback value and header-toggle rows. The focused Java suite passes43 assertions. Source/package validation and whitespace checks pass. `cleanup-objects.py` records zero exact owned definition/design/request UUIDs and zero R3 prefix residuals; clinical rows and pre-audit history remain untouched.

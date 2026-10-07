@@ -66,11 +66,7 @@ public class ExcelTemplateRenderer extends ReportTemplateRenderer {
 	 */
     @Override
 	public String getFilename(ReportRequest request) {
-		String fileName = super.getFilename(request);
-		if (!fileName.contains(".xls")) {
-			fileName += ".xls";
-		}
-		return fileName;
+        return getFilenameBase(request) + (usesOpenXml(request) ? ".xlsx" : ".xls");
 	}
 
 	/**
@@ -78,8 +74,18 @@ public class ExcelTemplateRenderer extends ReportTemplateRenderer {
      * @param request
 	 */
 	public String getRenderedContentType(ReportRequest request) {
-		return "application/vnd.ms-excel";
+		return usesOpenXml(request) ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                : "application/vnd.ms-excel";
 	}
+
+    private boolean usesOpenXml(ReportRequest request) {
+        ReportDesign design = getDesign(request.getRenderingMode().getArgument());
+        org.openmrs.module.reporting.report.ReportDesignResource template = design == null ? null : getTemplate(design);
+        // Default ExcelBuilder uses XSSFWorkbook. Uploaded OLE/HSSF templates remain .xls.
+        if (template == null || template.getContents() == null) return true;
+        byte[] bytes = template.getContents();
+        return bytes.length >= 2 && bytes[0] == 'P' && bytes[1] == 'K';
+    }
 
 	/** 
 	 * @see ReportRenderer#render(ReportData, String, OutputStream)

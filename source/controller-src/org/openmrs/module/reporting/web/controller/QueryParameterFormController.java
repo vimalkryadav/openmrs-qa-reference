@@ -98,7 +98,8 @@ public class QueryParameterFormController {
 				EvaluationContext evaluationContext = new EvaluationContext();
 
 				if (parameterizable instanceof DataDefinition || parameterizable instanceof LogicDataSetDefinition
-                    || parameterizable instanceof PatientDataSetDefinition) {
+                    || parameterizable instanceof PatientDataSetDefinition
+                    || parameterizable instanceof org.openmrs.module.reporting.dataset.definition.RowPerObjectDataSetDefinition) {
 				    Integer randomBaseCohortSize = 50;
 				    // Preview must not materialize every patient in a large database.
                     Cohort baseCohort = new Cohort();

@@ -58,6 +58,12 @@ public final class ConvertedDefinitionEditor {
         List<Object> current = new ArrayList<Object>();
         for (DataConverter converter : converted.getConverters()) current.add(describe(converter));
         model.put("converters",current);
+        List<Object> catalogue = catalogue();
+        model.put("catalogue",catalogue);
+        return JSON.writeValueAsString(model);
+    }
+
+    public static List<Object> catalogue() throws Exception {
         List<Object> catalogue = new ArrayList<Object>();
         for (String name : NAMES) {
             Class<?> type=Class.forName(PREFIX+name);
@@ -74,11 +80,10 @@ public final class ConvertedDefinitionEditor {
             }
             item.put("fields",fields);catalogue.add(item);
         }
-        model.put("catalogue",catalogue);
-        return JSON.writeValueAsString(model);
+        return catalogue;
     }
 
-    private static Map<String,Object> describe(DataConverter converter) throws Exception {
+    public static Map<String,Object> describe(DataConverter converter) throws Exception {
         Map<String,Object> result=new LinkedHashMap<String,Object>();result.put("type",converter.getClass().getSimpleName());
         Map<String,Object> props=new LinkedHashMap<String,Object>();
         for(PropertyDescriptor p:Introspector.getBeanInfo(converter.getClass()).getPropertyDescriptors()) {
