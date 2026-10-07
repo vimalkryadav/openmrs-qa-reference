@@ -21,7 +21,7 @@ import org.openmrs.serialization.SerializationException;
  * Converts between a {@link Mapped} and a String representation
  */
 public class MappedEditor extends PropertyEditorSupport {
-	
+
 	/**
 	 * @see java.beans.PropertyEditorSupport#setAsText(java.lang.String)
 	 */
@@ -35,7 +35,7 @@ public class MappedEditor extends PropertyEditorSupport {
 			}
 		}
 	}
-	
+
     public static String decodeTransportXml(String text) {
         // Legacy UI's XSS request wrapper HTML-encodes structured XML form values.
         // Decode that transport layer only; raw XML and its own entity escapes stay intact.
@@ -50,14 +50,14 @@ public class MappedEditor extends PropertyEditorSupport {
 	public String getAsText() {
 	    Mapped<?> mapped = (Mapped<?>) getValue();
 	    if (mapped != null) {
-	    	try {
+            try {
 	            return Context.getSerializationService().serialize(mapped, ReportingSerializer.class);
             } catch (SerializationException ex) {
 	            throw new RuntimeException(ex);
             }
 	    } else {
-	    	return "";
+            return "";
 	    }
 	}
-	
+
 }

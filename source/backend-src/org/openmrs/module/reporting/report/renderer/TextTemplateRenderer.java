@@ -43,11 +43,11 @@ import java.util.Map;
 @Handler
 @Localized("reporting.TextTemplateRenderer")
 public class TextTemplateRenderer extends ReportTemplateRenderer {
-	
+
 	public static final String TEMPLATE_TYPE = "templateType";
-	
+
 	private Log log = LogFactory.getLog(this.getClass());
-	
+
 	public TextTemplateRenderer() {
 		super();
 	}
@@ -62,7 +62,7 @@ public class TextTemplateRenderer extends ReportTemplateRenderer {
 		}
 		return contentType;
 	}
-	
+
 	/**
 	 * @see ReportTemplateRenderer#getBaseReplacementData(ReportData, ReportDesign)
 	 */
@@ -71,7 +71,7 @@ public class TextTemplateRenderer extends ReportTemplateRenderer {
 	public Map<String, Object> getBaseReplacementData(ReportData reportData, ReportDesign design) {
 		// Populate the replacement data with all core values, and any data sets with only one row
 		Map<String, Object> data = super.getBaseReplacementData(reportData, design);
-		
+
 		// Now go through and add data sets and add rows by index to replacement data as well
 		for (String dataSetName : reportData.getDataSets().keySet()) {
 			DataSet ds = reportData.getDataSets().get(dataSetName);
@@ -89,17 +89,17 @@ public class TextTemplateRenderer extends ReportTemplateRenderer {
 						data.put(e.getKey().getName() + SEPARATOR + rowNum, replacementValue);
 						data.put(e.getKey().getName() + SEPARATOR + rowNum + SEPARATOR + LABEL, columnLabel);
 					}
-				}				
+				}
 			}
 		}
 		return data;
 	}
-	
+
 	/**
 	 * @see ReportRenderer#render(ReportData, String, OutputStream)
 	 */
 	public void render(ReportData reportData, String argument, OutputStream out) throws IOException, RenderingException {
-		
+
         renderWithDesign(reportData, getDesign(argument), out);
     }
 
@@ -107,9 +107,9 @@ public class TextTemplateRenderer extends ReportTemplateRenderer {
     public void renderWithDesign(ReportData reportData, ReportDesign reportDesign, OutputStream out)
             throws IOException, RenderingException {
 		log.debug("Attempting to render report with TextTemplateRenderer");
-		
+
 		Writer pw = new OutputStreamWriter(out, "UTF-8");
-		
+
 		try {
 			if (reportDesign == null) {
                 throw new RenderingException("The selected report design no longer exists");
@@ -120,7 +120,7 @@ public class TextTemplateRenderer extends ReportTemplateRenderer {
             }
 			String templateContents = new String(reportDesignResource.getContents(), "UTF-8");
 			Map<String, Object> replacements = getBaseReplacementData(reportData, reportDesign);
-	
+
 			// First, run the template through any engine that is specified
 			String templateEngineName = reportDesign.getPropertyValue(TEMPLATE_TYPE, null);
 			TemplateEngine engine = TemplateEngineManager.getTemplateEngineByName(templateEngineName);

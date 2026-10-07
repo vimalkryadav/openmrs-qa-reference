@@ -44,8 +44,8 @@ import org.springframework.web.context.request.WebRequest;
 public class CohortIndicatorAndDimensionDataSetEditor {
 
 	@InitBinder
-    public void initBinder(WebDataBinder binder) { 
-    	binder.registerCustomEditor(Indicator.class, new IndicatorEditor());
+    public void initBinder(WebDataBinder binder) {
+        binder.registerCustomEditor(Indicator.class, new IndicatorEditor());
     }
 
 	@RequestMapping("/module/reporting/datasets/cohortIndicatorAndDimensionDatasetEditor.form")
@@ -56,7 +56,7 @@ public class CohortIndicatorAndDimensionDataSetEditor {
 		}
 		model.addAttribute("dsd", dsd);
 	}
-	
+
 	@RequestMapping("/module/reporting/datasets/cohortIndicatorAndDimensionAddSpecification.form")
 	public String addSpecification(@RequestParam("dsdUuid") String dsdUuid,
 							@RequestParam(value="index", required=false) Integer index,
@@ -68,7 +68,7 @@ public class CohortIndicatorAndDimensionDataSetEditor {
 
 		DataSetDefinition dsd = DefinitionContext.getDataSetDefinitionService().getDefinitionByUuid(dsdUuid);
 		CohortIndicatorAndDimensionDataSetDefinition cidsd = (CohortIndicatorAndDimensionDataSetDefinition)dsd;
-		
+
 		CohortIndicatorAndDimensionSpecification spec = null;
 		if (index == null) {
 			spec = cidsd.new CohortIndicatorAndDimensionSpecification();
@@ -79,29 +79,29 @@ public class CohortIndicatorAndDimensionDataSetEditor {
 		}
 		spec.setIndicatorNumber(indicatorNumber);
 		spec.setLabel(label);
-		
+
 		Mapped<CohortIndicator> mapped = new Mapped<CohortIndicator>();
 		mapped.setParameterizable(indicator);
-		
-    	for (Parameter p : indicator.getParameters()) {
-    		String valueType = request.getParameterValues("valueType_"+p.getName())[0];
-    		String[] value = request.getParameterValues(valueType+"Value_"+p.getName());
-    		if (value != null && value.length > 0) {
-	    		Object paramValue = null;
-	    		if (StringUtils.isEmpty(valueType) || valueType.equals("fixed")) {
-	    			String fixedValueString = OpenmrsUtil.join(Arrays.asList(value), ",");
-	    			paramValue = WidgetUtil.parseInput(fixedValueString, p.getType());
-	    		}
-	    		else {
-	    			paramValue = "${"+value[0]+"}";
-	    		}
-	    		if (paramValue != null) {
-	    			mapped.addParameterMapping(p.getName(), paramValue);
-	    		}
-    		}
-    	}
+
+        for (Parameter p : indicator.getParameters()) {
+            String valueType = request.getParameterValues("valueType_"+p.getName())[0];
+            String[] value = request.getParameterValues(valueType+"Value_"+p.getName());
+            if (value != null && value.length > 0) {
+                Object paramValue = null;
+                if (StringUtils.isEmpty(valueType) || valueType.equals("fixed")) {
+                    String fixedValueString = OpenmrsUtil.join(Arrays.asList(value), ",");
+                    paramValue = WidgetUtil.parseInput(fixedValueString, p.getType());
+                }
+                else {
+                    paramValue = "${"+value[0]+"}";
+                }
+                if (paramValue != null) {
+                    mapped.addParameterMapping(p.getName(), paramValue);
+                }
+            }
+        }
 		spec.setIndicator(mapped);
-		
+
 		// Parse the dimension parameters to organize them, keeping them in order they are defined
 		Map<String, List<String>> dimensionOptions = new LinkedHashMap<String, List<String>>();
 		if (ObjectUtil.notNull(dimensions)) {
@@ -114,7 +114,7 @@ public class CohortIndicatorAndDimensionDataSetEditor {
 							l = new ArrayList<String>();
 							dimensionOptions.put(dimensionKey, l);
 						}
-						l.add(option);	
+						l.add(option);
 					}
 				}
 			}
@@ -127,33 +127,33 @@ public class CohortIndicatorAndDimensionDataSetEditor {
 				return c.compare(s1.getIndicatorNumber(), s2.getIndicatorNumber());
 			}
 		});
-		
+
 		DefinitionContext.getDataSetDefinitionService().saveDefinition(cidsd);
-		
+
 		return "redirect:/module/reporting/closeWindow.htm";
 	}
-	
+
 	@RequestMapping("/module/reporting/datasets/cohortIndicatorAndDimensionRemoveIndicator.form")
 	public String removeIndicator(@RequestParam("dsdUuid") String dsdUuid,
-	                           	  @RequestParam("index") Integer index) {
-		
+                                  @RequestParam("index") Integer index) {
+
 		DataSetDefinition dsd = DefinitionContext.getDataSetDefinitionService().getDefinitionByUuid(dsdUuid);
 		CohortIndicatorAndDimensionDataSetDefinition cdsd = (CohortIndicatorAndDimensionDataSetDefinition) dsd;
 		cdsd.removeSpecification(index);
 		DefinitionContext.getDataSetDefinitionService().saveDefinition(cdsd);
-		
+
 		return "redirect:cohortIndicatorAndDimensionDatasetEditor.form?uuid=" + dsdUuid;
 	}
-	
+
 	@RequestMapping("/module/reporting/datasets/cohortIndicatorAndDimensionRemoveDimension.form")
 	public String removeDimension(@RequestParam("uuid") String uuid,
 	                              @RequestParam("key") String key) {
-		
+
 		DataSetDefinition dsd = DefinitionContext.getDataSetDefinitionService().getDefinitionByUuid(uuid);
 		CohortIndicatorAndDimensionDataSetDefinition cdsd = (CohortIndicatorAndDimensionDataSetDefinition) dsd;
 		cdsd.removeDimension(key);
 		DefinitionContext.getDataSetDefinitionService().saveDefinition(cdsd);
-		
+
 		return "redirect:cohortIndicatorAndDimensionDatasetEditor.form?uuid=" + uuid;
 	}
 }

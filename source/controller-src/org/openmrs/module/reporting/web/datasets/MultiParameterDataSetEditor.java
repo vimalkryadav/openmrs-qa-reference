@@ -32,12 +32,12 @@ import java.util.Map;
 
 @Controller
 public class MultiParameterDataSetEditor {
-	
+
 	@RequestMapping("/module/reporting/datasets/multiParameterDataSetEditor.form")
 	public void showForm(ModelMap model,
 						 @RequestParam(value="uuid", required=false) String uuid) {
 		List<DataSetDefinition> allDefinitions = Context.getService(DataSetDefinitionService.class).getAllDefinitions(false);
-		if (uuid == null) {			
+		if (uuid == null) {
 			model.addAttribute("definition", new MultiParameterDataSetDefinition());
 		} else {
 			DataSetDefinition def = Context.getService(DataSetDefinitionService.class).getDefinitionByUuid(uuid);
@@ -46,7 +46,7 @@ public class MultiParameterDataSetEditor {
 				model.addAttribute("definition", def);
 			} else {
 				throw new RuntimeException("This definition is not of the right class");
-			} 
+			}
 		}
 		model.addAttribute("availableDefinitions", allDefinitions);
 	}

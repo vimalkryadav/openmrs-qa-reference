@@ -45,7 +45,7 @@ public class ReportingSerializer extends XStreamShortSerializer {
 	private final Log log = LogFactory.getLog(this.getClass());
 
 	private boolean xstreamSecuritySetup = false;
-	
+
 	/**
 	 * @throws SerializationException
 	 * @should serialize a cohort definition
@@ -54,10 +54,10 @@ public class ReportingSerializer extends XStreamShortSerializer {
 	 */
 	public ReportingSerializer() throws SerializationException {
 	    super(new XStream(new DomDriver()) {
-	    	
-	    	/**
-	    	 * This method copied from XStreamSerializer constructor.
-	    	 */
+
+            /**
+             * This method copied from XStreamSerializer constructor.
+             */
 			protected MapperWrapper wrapMapper(MapperWrapper next) {
 				MapperWrapper mapper = new CGLibMapper(next);
 				mapper = new JavassistMapper(mapper);
@@ -65,10 +65,10 @@ public class ReportingSerializer extends XStreamShortSerializer {
 				mapper = new NullValueMapper(mapper);
 				return mapper;
 			}
-			
-	    	/**
-	    	 * Override a mid-level XStream method to reuse a DataHolder cache if one is available 
-	    	 */
+
+            /**
+             * Override a mid-level XStream method to reuse a DataHolder cache if one is available
+             */
 	        public Object unmarshal(HierarchicalStreamReader reader, Object root) {
 	            return unmarshal(reader, root, cache.get());
 	        }
@@ -89,16 +89,16 @@ public class ReportingSerializer extends XStreamShortSerializer {
         xstream.registerConverter(new ObjectDefinitionConverter(mapper, converterLookup, org.openmrs.module.reporting.data.obs.definition.ObsDataDefinition.class));
         xstream.registerConverter(new ObjectDefinitionConverter(mapper, converterLookup, org.openmrs.module.reporting.data.visit.definition.VisitDataDefinition.class));
         xstream.registerConverter(new ObjectDefinitionConverter(mapper, converterLookup, org.openmrs.module.reporting.query.visit.definition.VisitQuery.class));
-	    
+
 	    xstream.registerConverter(new DataSetDefinitionConverter(mapper, converterLookup));
-	    
+
 	    xstream.registerConverter(new DimensionConverter(mapper, converterLookup));
 	    xstream.registerConverter(new IndicatorConverter(mapper, converterLookup));
 
 		xstream.registerConverter(new ReportDefinitionConverter(mapper, converterLookup));
 		xstream.allowTypes(new Class[] {Parameter.class, Mapped.class, CohortIndicatorAndDimensionDataSetDefinition.CohortIndicatorAndDimensionSpecification.class});
 	}
-	
+
 	@Override
 	synchronized public <T> T deserialize(String serializedObject, Class<? extends T> clazz) throws SerializationException {
 		if (!xstreamSecuritySetup) {

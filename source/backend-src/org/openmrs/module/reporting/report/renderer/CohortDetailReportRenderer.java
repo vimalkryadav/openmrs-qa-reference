@@ -55,7 +55,7 @@ import java.util.Map;
 @Handler
 @Localized("reporting.CohortDetailReportRenderer")
 public class CohortDetailReportRenderer extends ReportDesignRenderer {
-	
+
 	/**
      * @see ReportRenderer#getRenderedContentType(org.openmrs.module.reporting.report.ReportRequest)
      * @param request
@@ -64,7 +64,7 @@ public class CohortDetailReportRenderer extends ReportDesignRenderer {
 		if (isWorkbook(request.getRenderingMode().getArgument())) {
 			return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 		}
-    	return "text/html";
+        return "text/html";
     }
 
     @Override
@@ -73,7 +73,7 @@ public class CohortDetailReportRenderer extends ReportDesignRenderer {
 		String[] split = argument.split(":");
 		return getFilenameBase(request) + "." + (isWorkbook(argument) ? "xlsx" : split[1]);
 	}
-	
+
     private boolean isWorkbook(String argument) {
         return argument != null && (argument.toLowerCase(java.util.Locale.ROOT).endsWith(":xls")
                 || argument.toLowerCase(java.util.Locale.ROOT).endsWith(":xlsx"));
@@ -98,7 +98,7 @@ public class CohortDetailReportRenderer extends ReportDesignRenderer {
 	 */
 	@SuppressWarnings("unchecked")
 	public void render(ReportData results, String argument, OutputStream out) throws IOException, RenderingException {
-		
+
 		String[] args = argument.split(":");
 		ReportDesign design = getDesign(args[0]);
 		ReportDesignResource resource = design.getResourceByName("designFile");
@@ -110,7 +110,7 @@ public class CohortDetailReportRenderer extends ReportDesignRenderer {
 				parameterValues.put(p.getLabelOrName(), value);
 			}
 		}
-		
+
 		// Collect all available Cohorts by key
 		Map<String, Cohort> cohorts = new HashMap<String, Cohort>();
 		Map<String, String> cohortLabels = new HashMap<String, String>();
@@ -137,7 +137,7 @@ public class CohortDetailReportRenderer extends ReportDesignRenderer {
 				}
 			}
 		}
-		
+
 		Map<String, Mapped<? extends DataSetDefinition>> m;
 		try {
 			ReportingSerializer s = new ReportingSerializer();
@@ -146,7 +146,7 @@ public class CohortDetailReportRenderer extends ReportDesignRenderer {
 		catch (SerializationException e) {
 			throw new RenderingException("Error deserializing the design file.", e);
 		}
-		
+
 		// Iterate across all of the defined data sets to show, and evaluate them
 		Map<String, DataSet> datasets = new LinkedHashMap<String, DataSet>();
 		DataSetDefinitionService svc = Context.getService(DataSetDefinitionService.class);
@@ -168,7 +168,7 @@ public class CohortDetailReportRenderer extends ReportDesignRenderer {
 				}
 			}
 		}
-		
+
 		// Not, render it depending on the argument passed in
 		if ("xls".equalsIgnoreCase(args[1]) || "xlsx".equalsIgnoreCase(args[1])) {
 	        ExcelBuilder excelBuilder = new ExcelBuilder();
@@ -176,7 +176,7 @@ public class CohortDetailReportRenderer extends ReportDesignRenderer {
 			// For each dataset that is defined to be included, evaluate and include it
 			for (String dataSetKey : datasets.keySet()) {
 				DataSet dataset = datasets.get(dataSetKey);
-				
+
 				String displayName = cohortLabels.get(dataSetKey);
 				excelBuilder.newSheet(displayName);
 
@@ -203,16 +203,16 @@ public class CohortDetailReportRenderer extends ReportDesignRenderer {
 		}
 		else {
 			Writer w = new OutputStreamWriter(out,"UTF-8");
-			
+
 			// First output the name, description, and parameters of the report
-			w.write("<h4>" + results.getDefinition().getName() + "</h4>");		
+			w.write("<h4>" + results.getDefinition().getName() + "</h4>");
 			w.write("<small>");
 			for (Iterator<String> i = parameterValues.keySet().iterator(); i.hasNext();) {
 				String key = i.next();
-				w.write(key + ": <strong>" + parameterValues.get(key) + "</strong>" + (i.hasNext() ? " | " : ""));								
+				w.write(key + ": <strong>" + parameterValues.get(key) + "</strong>" + (i.hasNext() ? " | " : ""));
 			}
 			w.write("</small>");
-			
+
 			// For each dataset that is defined to be included, evaluate and include it
 			for (String dataSetKey : datasets.keySet()) {
 				DataSet dataset = datasets.get(dataSetKey);
@@ -232,7 +232,7 @@ public class CohortDetailReportRenderer extends ReportDesignRenderer {
 					w.write("</tr>");
 				}
 				w.write("</table>");
-			}		
+			}
 			w.flush();
 		}
 	}

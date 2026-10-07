@@ -35,8 +35,8 @@
 				<value>org.openmrs.module.reporting.report.definition.ReportDefinition</value>
 			</list>
 		</property>
-	</bean>	
-	
+	</bean>
+
 	<!--  Services -->
 
 	<bean id="reportingSerializedDefinitionService" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
@@ -53,12 +53,12 @@
 		<property name="transactionAttributeSource">
 			<bean class="org.springframework.transaction.annotation.AnnotationTransactionAttributeSource"/>
 		</property>
-	</bean>	
+	</bean>
 
 	<bean parent="serviceContext">
 		<property name="moduleService">
 			<list merge="true">
-				<value>org.openmrs.module.reporting.definition.service.SerializedDefinitionService</value> 
+				<value>org.openmrs.module.reporting.definition.service.SerializedDefinitionService</value>
 				<ref bean="reportingSerializedDefinitionService"/>
 			</list>
 		</property>
@@ -85,7 +85,7 @@
 			</list>
 		</property>
 	</bean>
-	
+
 	<bean id="reportingReportDefinitionService" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
 		<property name="transactionManager"><ref bean="transactionManager"/></property>
 		<property name="target">
@@ -97,24 +97,24 @@
 		<property name="transactionAttributeSource">
 			<bean class="org.springframework.transaction.annotation.AnnotationTransactionAttributeSource"/>
 		</property>
-	</bean>	
-	
+	</bean>
+
 	<bean parent="serviceContext">
 		<property name="moduleService">
 			<list merge="true">
-				<value>org.openmrs.module.reporting.report.definition.service.ReportDefinitionService</value> 
+				<value>org.openmrs.module.reporting.report.definition.service.ReportDefinitionService</value>
 				<ref bean="reportingReportDefinitionService"/>
 			</list>
 		</property>
 	</bean>
-	
+
 	<bean id="reportingReportService" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
 		<property name="transactionManager"><ref bean="transactionManager"/></property>
 		<property name="target">
 			<bean class="org.openmrs.module.reporting.report.service.ReportServiceImpl">
 				<property name="reportDAO">
 					<bean class="org.openmrs.module.reporting.report.service.db.HibernateReportDAO">
-						<property name="sessionFactory"><ref bean="dbSessionFactory"/></property>	
+						<property name="sessionFactory"><ref bean="dbSessionFactory"/></property>
 					</bean>
 				</property>
 				<property name="runQueuedReportsTask" ref="runQueuedReportsTask"/>
@@ -126,19 +126,19 @@
 		<property name="transactionAttributeSource">
 			<bean class="org.springframework.transaction.annotation.AnnotationTransactionAttributeSource"/>
 		</property>
-	</bean>	
-	
+	</bean>
+
 	<bean parent="serviceContext">
 		<property name="moduleService">
 			<list merge="true">
-				<value>org.openmrs.module.reporting.report.service.ReportService</value> 
+				<value>org.openmrs.module.reporting.report.service.ReportService</value>
 				<ref bean="reportingReportService"/>
 			</list>
 		</property>
 	</bean>
-	
+
 	<!-- Data Definition Services -->
-	
+
 	<bean id="reportingPersonDataService" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
 		<property name="transactionManager"><ref bean="transactionManager"/></property>
 		<property name="target">
@@ -150,17 +150,17 @@
 		<property name="transactionAttributeSource">
 			<bean class="org.springframework.transaction.annotation.AnnotationTransactionAttributeSource"/>
 		</property>
-	</bean>	
-	
+	</bean>
+
 	<bean parent="serviceContext">
 		<property name="moduleService">
 			<list merge="true">
-				<value>org.openmrs.module.reporting.data.person.service.PersonDataService</value> 
+				<value>org.openmrs.module.reporting.data.person.service.PersonDataService</value>
 				<ref bean="reportingPersonDataService" />
 			</list>
 		</property>
 	</bean>
-	
+
 	<bean id="reportingPatientDataService" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
 		<property name="transactionManager"><ref bean="transactionManager"/></property>
 		<property name="target">
@@ -172,12 +172,12 @@
 		<property name="transactionAttributeSource">
 			<bean class="org.springframework.transaction.annotation.AnnotationTransactionAttributeSource"/>
 		</property>
-	</bean>		
+	</bean>
 
 	<bean parent="serviceContext">
 		<property name="moduleService">
 			<list merge="true">
-				<value>org.openmrs.module.reporting.data.patient.service.PatientDataService</value> 
+				<value>org.openmrs.module.reporting.data.patient.service.PatientDataService</value>
 				<ref bean="reportingPatientDataService"/>
 			</list>
 		</property>
@@ -217,12 +217,12 @@
 		<property name="transactionAttributeSource">
 			<bean class="org.springframework.transaction.annotation.AnnotationTransactionAttributeSource"/>
 		</property>
-	</bean>	
-	
+	</bean>
+
 	<bean parent="serviceContext">
 		<property name="moduleService">
 			<list merge="true">
-				<value>org.openmrs.module.reporting.data.encounter.service.EncounterDataService</value> 
+				<value>org.openmrs.module.reporting.data.encounter.service.EncounterDataService</value>
 				<ref bean="reportingEncounterDataService"/>
 			</list>
 		</property>
@@ -251,7 +251,7 @@
     </bean>
 
     <!-- Query Definition Services -->
-	
+
 	<bean id="reportingPersonQueryService" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
 		<property name="transactionManager"><ref bean="transactionManager"/></property>
 		<property name="target">
@@ -263,12 +263,12 @@
 		<property name="transactionAttributeSource">
 			<bean class="org.springframework.transaction.annotation.AnnotationTransactionAttributeSource"/>
 		</property>
-	</bean>	
-	
+	</bean>
+
 	<bean parent="serviceContext">
 		<property name="moduleService">
 			<list merge="true">
-				<value>org.openmrs.module.reporting.query.person.service.PersonQueryService</value> 
+				<value>org.openmrs.module.reporting.query.person.service.PersonQueryService</value>
 				<ref bean="reportingPersonQueryService"/>
 			</list>
 		</property>
@@ -308,16 +308,16 @@
 			<bean class="org.springframework.transaction.annotation.AnnotationTransactionAttributeSource"/>
 		</property>
 	</bean>
-				
+
 	<bean parent="serviceContext">
 		<property name="moduleService">
 			<list merge="true">
-				<value>org.openmrs.module.reporting.query.encounter.service.EncounterQueryService</value> 
+				<value>org.openmrs.module.reporting.query.encounter.service.EncounterQueryService</value>
 				<ref bean="reportingEncounterQueryService"/>
 			</list>
 		</property>
 	</bean>
-	
+
 	<bean id="reportingObsQueryService" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
 		<property name="transactionManager"><ref bean="transactionManager"/></property>
 		<property name="target">
@@ -329,19 +329,19 @@
 		<property name="transactionAttributeSource">
 			<bean class="org.springframework.transaction.annotation.AnnotationTransactionAttributeSource"/>
 		</property>
-	</bean>	
-	
+	</bean>
+
 	<bean parent="serviceContext">
 		<property name="moduleService">
 			<list merge="true">
-				<value>org.openmrs.module.reporting.query.obs.service.ObsQueryService</value> 
+				<value>org.openmrs.module.reporting.query.obs.service.ObsQueryService</value>
 				<ref bean="reportingObsQueryService"/>
 			</list>
 		</property>
 	</bean>
-	
+
 	<!-- Cohort Definition Service -->
-	
+
 	<bean id="reportingCohortDefinitionService" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
 		<property name="transactionManager"><ref bean="transactionManager"/></property>
 		<property name="target">
@@ -353,19 +353,19 @@
 		<property name="transactionAttributeSource">
 			<bean class="org.springframework.transaction.annotation.AnnotationTransactionAttributeSource"/>
 		</property>
-	</bean>	
-	
+	</bean>
+
 	<bean parent="serviceContext">
 		<property name="moduleService">
 			<list merge="true">
-				<value>org.openmrs.module.reporting.cohort.definition.service.CohortDefinitionService</value> 
+				<value>org.openmrs.module.reporting.cohort.definition.service.CohortDefinitionService</value>
 				<ref bean="reportingCohortDefinitionService"/>
 			</list>
 		</property>
 	</bean>
 
 	<!--  Dataset Definition Service -->
-	
+
 	<bean id="reportingDataSetDefinitionService" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
 		<property name="transactionManager"><ref bean="transactionManager"/></property>
 		<property name="target">
@@ -378,18 +378,18 @@
 			<bean class="org.springframework.transaction.annotation.AnnotationTransactionAttributeSource"/>
 		</property>
 	</bean>
-	
+
 	<bean parent="serviceContext">
 		<property name="moduleService">
 			<list merge="true">
-				<value>org.openmrs.module.reporting.dataset.definition.service.DataSetDefinitionService</value> 
+				<value>org.openmrs.module.reporting.dataset.definition.service.DataSetDefinitionService</value>
 				<ref bean="reportingDataSetDefinitionService"/>
 			</list>
 		</property>
 	</bean>
 
 	<!-- Indicator Service -->
-	
+
 	<bean id="reportingIndicatorService" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
 		<property name="transactionManager"><ref bean="transactionManager"/></property>
 		<property name="target">
@@ -401,19 +401,19 @@
 		<property name="transactionAttributeSource">
 			<bean class="org.springframework.transaction.annotation.AnnotationTransactionAttributeSource"/>
 		</property>
-	</bean>	
-	
+	</bean>
+
 	<bean parent="serviceContext">
 		<property name="moduleService">
 			<list merge="true">
-				<value>org.openmrs.module.reporting.indicator.service.IndicatorService</value> 
+				<value>org.openmrs.module.reporting.indicator.service.IndicatorService</value>
 				<ref bean="reportingIndicatorService"/>
 			</list>
 		</property>
 	</bean>
-	
+
 	<!-- Dimension Service -->
-	
+
 	<bean id="reportingDimensionService" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
 		<property name="transactionManager"><ref bean="transactionManager"/></property>
 		<property name="target">
@@ -426,31 +426,31 @@
 			<bean class="org.springframework.transaction.annotation.AnnotationTransactionAttributeSource"/>
 		</property>
 	</bean>
-	
+
 	<bean parent="serviceContext">
 		<property name="moduleService">
 			<list merge="true">
-				<value>org.openmrs.module.reporting.indicator.dimension.service.DimensionService</value> 
+				<value>org.openmrs.module.reporting.indicator.dimension.service.DimensionService</value>
 				<ref bean="reportingDimensionService"/>
 			</list>
 		</property>
 	</bean>
 
 	<bean id="cohortQueryDAO" class="org.openmrs.module.reporting.cohort.query.db.hibernate.HibernateCohortQueryDAO">
-		<property name="sessionFactory"><ref bean="dbSessionFactory"/></property>	
-	</bean>		
-	
-	<bean id="dataSetQueryDAO" class="org.openmrs.module.reporting.dataset.query.service.db.HibernateDataSetQueryDAO">
-		<property name="sessionFactory"><ref bean="dbSessionFactory"/></property>	
+		<property name="sessionFactory"><ref bean="dbSessionFactory"/></property>
 	</bean>
-	
+
+	<bean id="dataSetQueryDAO" class="org.openmrs.module.reporting.dataset.query.service.db.HibernateDataSetQueryDAO">
+		<property name="sessionFactory"><ref bean="dbSessionFactory"/></property>
+	</bean>
+
 	<bean id="reportingCohortQueryService" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
 		<property name="transactionManager"><ref bean="transactionManager"/></property>
 		<property name="target">
 			<bean class="org.openmrs.module.reporting.cohort.query.service.CohortQueryServiceImpl">
 				<property name="cohortQueryDAO">
 					<ref bean="cohortQueryDAO" />
-				</property>	
+				</property>
 			</bean>
 		</property>
 		<property name="preInterceptors">
@@ -460,7 +460,7 @@
 			<bean class="org.springframework.transaction.annotation.AnnotationTransactionAttributeSource"/>
 		</property>
 	</bean>
-	
+
     <bean parent="serviceContext">
 		<property name="moduleService">
 			<list>
@@ -469,14 +469,14 @@
 			</list>
 		</property>
 	</bean>
-	
+
 	<bean id="reportingDataSetQueryService" class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
 		<property name="transactionManager"><ref bean="transactionManager"/></property>
 		<property name="target">
 			<bean class="org.openmrs.module.reporting.dataset.query.service.BaseDataSetQueryService">
 				<property name="dao">
 					<ref bean="dataSetQueryDAO" />
-				</property>	
+				</property>
 			</bean>
 		</property>
 		<property name="preInterceptors">
@@ -486,7 +486,7 @@
 			<bean class="org.springframework.transaction.annotation.AnnotationTransactionAttributeSource"/>
 		</property>
 	</bean>
-	
+
 	<bean parent="serviceContext">
 		<property name="moduleService">
 			<list>
@@ -527,13 +527,13 @@
 	    <property name="period" value="60000" /> <!-- run every minute -->
 	    <property name="runnable" ref="runQueuedReportsTask"/>
 	</bean>
-	
+
 	<bean id="deleteOldReportsTimerTask" class="org.springframework.scheduling.concurrent.ScheduledExecutorTask">
 		<property name="delay" value="10000" /> <!-- delay 10 seconds -->
 	    <property name="period" value="3600000" /> <!-- run every hour -->
 	    <property name="runnable" ref="deleteOldReportsTask"/>
 	</bean>
-	
+
 	<bean id="persistCachedReportsTimerTask" class="org.springframework.scheduling.concurrent.ScheduledExecutorTask">
 		<property name="delay" value="10000" /> <!-- delay 10 seconds -->
 	    <property name="period" value="60000" /> <!-- run every minute -->

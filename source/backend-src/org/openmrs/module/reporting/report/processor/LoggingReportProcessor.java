@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class LoggingReportProcessor implements ReportProcessor {
-	
+
 	private Log log = LogFactory.getLog(this.getClass());
 
 	/**

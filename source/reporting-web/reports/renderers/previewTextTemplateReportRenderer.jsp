@@ -32,13 +32,13 @@
 			for( var i in fixedValueElementIds ){
 				jQuery( "#" + fixedValueElementIds[ i ] ).addClass( fixedValueElementIds[ i ] );
 			}
-			
+
 	});
 
 	function toggleInputElements( idPrefix ){
 		jQuery( '.'+idPrefix ).toggle();
 	}
-	
+
 
 </script>
 
@@ -62,26 +62,26 @@
 							fixedValueElementIds.push('userEnteredParam${parameter.name}');
 						</script>
 		                <tr>
-		                    
+
 				            <td><spring:message code="${parameter.label}"/>:</td>
 		                    <td>
-		                    	<spring:bind path="userParams.userEnteredParams[${parameter.name}]">
-	                   				<c:choose>
+                                <spring:bind path="userParams.userEnteredParams[${parameter.name}]">
+                                    <c:choose>
 										<c:when test="${parameter.collectionType != null}">
-											<wgt:widget id="userEnteredParam${parameter.name}" name="${status.expression}" type="${parameter.collectionType.name}" genericTypes="${parameter.type.name}" defaultValue="${status.value}" attributes="${parameter.widgetConfigurationAsString}"/>	
+											<wgt:widget id="userEnteredParam${parameter.name}" name="${status.expression}" type="${parameter.collectionType.name}" genericTypes="${parameter.type.name}" defaultValue="${status.value}" attributes="${parameter.widgetConfigurationAsString}"/>
 										</c:when>
 										<c:otherwise>
-											<wgt:widget id="userEnteredParam${parameter.name}" name="${status.expression}" type="${parameter.type.name}" defaultValue="${status.value}" attributes="${parameter.widgetConfigurationAsString}"/>	
+											<wgt:widget id="userEnteredParam${parameter.name}" name="${status.expression}" type="${parameter.type.name}" defaultValue="${status.value}" attributes="${parameter.widgetConfigurationAsString}"/>
 											<c:if test="${fn:contains(expSupportedTypes, parameter.type.name)}">
 												<spring:bind path="userParams.expressions[${parameter.name}]">
-													<input class="userEnteredParam${parameter.name}" type="text" name="${status.expression}" value="${status.value}" style="display: none" /> 
+													<input class="userEnteredParam${parameter.name}" type="text" name="${status.expression}" value="${status.value}" style="display: none" />
 													<span onclick="toggleInputElements('userEnteredParam${parameter.name}')">
 														<input class="userEnteredParam${parameter.name} smallButton" type="button" value='<spring:message code="reporting.Report.run.enterExpression"/>' style="width:100px;"/>
 														<input class="userEnteredParam${parameter.name} smallButton" type="button" value='<spring:message code="reporting.Report.run.enterFixedValue"/>' style="display:none; width:100px;" />
 													</span>
 													<c:if test="${not empty status.errorMessage}">
-					                            		<span class="error">${status.errorMessage}</span>
-					                        		</c:if>
+                                                        <span class="error">${status.errorMessage}</span>
+                                                    </c:if>
 												</spring:bind>
 											</c:if>
 										</c:otherwise>
@@ -104,13 +104,13 @@
 								<spring:message code="reporting.Report.run.optionalFilterCohort" var="filterCohortLabel"/>
 								<spring:message code="reporting.allPatients" var="allPatients"/>
 								<rptTag:mappedPropertyForObject id="baseCohort" formFieldName="baseCohort" object="${userParams}" propertyName="baseCohort" label="${filterCohortLabel}" emptyValueLabel="${allPatients}"/>
-				          	</td>
+                            </td>
 				         </tr>
 					</c:if>
 		            <tr>
-		            	<td>
-		            		<input type="submit" value="Preview"/>
-		            	</td>
+                        <td>
+                            <input type="submit" value="Preview"/>
+                        </td>
 		            </tr>
 				</table>
 				<br/>
@@ -123,7 +123,7 @@
 						<div id="textarea-container" class="border">
 							<textarea id="templateResult" name="results" cols="100" rows="16" readonly="readonly" aria-label="Preview result"><c:out value="${previewResult}"/></textarea>
 						</div>
-						
+
 					</c:when>
 				</c:choose>
 			</form>

@@ -24,7 +24,7 @@ import org.openmrs.module.reporting.evaluation.caching.Caching;
 public class StaticCohortDefinition extends BaseCohortDefinition {
 
     public static final long serialVersionUID = 1L;
-    
+
     //****************
     // Properties
     //****************
@@ -34,11 +34,11 @@ public class StaticCohortDefinition extends BaseCohortDefinition {
 
     // Existing serialized definitions default false and keep their cohort-backed identity.
     private boolean independentMetadata;
-	
+
     //****************
     // Constructors
     //****************
-	
+
     /**
      * Default Constructor
      */
@@ -47,7 +47,7 @@ public class StaticCohortDefinition extends BaseCohortDefinition {
 		cohort = new Cohort();
         independentMetadata = true;
 	}
-	
+
 	/**
 	 * Full constructor
 	 * @param cohort
@@ -57,7 +57,7 @@ public class StaticCohortDefinition extends BaseCohortDefinition {
 		this.cohort = cohort;
         independentMetadata = false;
 	}
-	
+
     public boolean isIndependentMetadata() { return independentMetadata; }
 
     //****************
@@ -68,17 +68,17 @@ public class StaticCohortDefinition extends BaseCohortDefinition {
      * @see BaseOpenmrsMetadata#getId()
      */
     public Integer getId() {
-    	return independentMetadata ? super.getId() : (cohort == null ? null : cohort.getCohortId());
+        return independentMetadata ? super.getId() : (cohort == null ? null : cohort.getCohortId());
     }
 
 	/**
      * @see org.openmrs.OpenmrsObject#setId(java.lang.Integer)
      */
     public void setId(Integer id) {
-    	if (independentMetadata) super.setId(id); else cohort.setCohortId(id);
+        if (independentMetadata) super.setId(id); else cohort.setCohortId(id);
     }
 
-	/** 
+	/**
 	 * @see BaseOpenmrsObject#getUuid()
 	 */
 	@Override
@@ -86,7 +86,7 @@ public class StaticCohortDefinition extends BaseCohortDefinition {
 		return independentMetadata ? super.getUuid() : (cohort == null ? null : cohort.getUuid());
 	}
 
-	/** 
+	/**
 	 * @see BaseOpenmrsObject#setUuid(String)
 	 */
 	@Override
@@ -98,43 +98,43 @@ public class StaticCohortDefinition extends BaseCohortDefinition {
      * @see BaseOpenmrsMetadata#getName()
      */
     public String getName() {
-    	return independentMetadata ? super.getName() : (cohort == null ? null : cohort.getName());
+        return independentMetadata ? super.getName() : (cohort == null ? null : cohort.getName());
     }
-    
+
 	/**
      * @see BaseOpenmrsMetadata#setName(java.lang.String)
      */
     @Override
     public void setName(String name) {
-    	if (independentMetadata) super.setName(name); else cohort.setName(name);
+        if (independentMetadata) super.setName(name); else cohort.setName(name);
     }
-    
+
 	/**
      * @see BaseOpenmrsMetadata#getDescription()
      */
     public String getDescription() {
-    	return independentMetadata ? super.getDescription() : (cohort == null ? null : cohort.getDescription());
+        return independentMetadata ? super.getDescription() : (cohort == null ? null : cohort.getDescription());
     }
-    
+
 	/**
      * @see BaseOpenmrsMetadata#setDescription(java.lang.String)
      */
     @Override
     public void setDescription(String description) {
-    	if (independentMetadata) super.setDescription(description); else cohort.setDescription(description);
+        if (independentMetadata) super.setDescription(description); else cohort.setDescription(description);
     }
 
     /**
      * @return the cohort
      */
     public Cohort getCohort() {
-    	return cohort;
+        return cohort;
     }
 
     /**
      * @param cohort the cohort to set
      */
     public void setCohort(Cohort cohort) {
-    	this.cohort = cohort;
+        this.cohort = cohort;
     }
 }

@@ -69,33 +69,33 @@ import org.apache.commons.io.IOUtils;
 @Handler
 @Localized("patientdocuments.patientIdStickerXmlReportRenderer")
 public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
-	
+
 	private static final Logger log = LoggerFactory.getLogger(PatientIdStickerXmlReportRenderer.class);
 
 	private static final String DEFAULT_LOGO_CLASSPATH = "web/module/resources/openmrs_logo_white_large.png";
-	
+
 	private MessageSourceService mss;
-	
+
 	private InitializerService initializerService;
-	
+
 	private MessageSourceService getMessageSourceService() {
-		
+
 		if (mss == null) {
 			mss = Context.getMessageSourceService();
 		}
-		
+
 		return mss;
 	}
-	
+
 	private InitializerService getInitializerService() {
-		
+
 		if (initializerService == null) {
 			initializerService = Context.getService(InitializerService.class);
 		}
-		
+
 		return initializerService;
 	}
-	
+
 	/**
 	 * @see ReportRenderer#getFilename(org.openmrs.module.reporting.report.ReportRequest)
 	 */
@@ -103,7 +103,7 @@ public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
 	public String getFilename(ReportRequest request) {
 		return getFilenameBase(request) + ".xml";
 	}
-	
+
 	/**
 	 * @see ReportRenderer#getRenderedContentType(org.openmrs.module.reporting.report.ReportRequest)
 	 */
@@ -111,20 +111,20 @@ public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
 	public String getRenderedContentType(ReportRequest request) {
 		return "text/xml";
 	}
-	
+
 	protected String getStringValue(Object obj) {
 		return obj == null ? "" : getMessageSourceService().getMessage(obj.toString());
 	}
-	
+
 	protected String getStringValue(DataSetRow row, String columnName) {
 		Object obj = row.getColumnValue(columnName);
 		return getStringValue(obj);
 	}
-	
+
 	protected String getStringValue(DataSetRow row, DataSetColumn column) {
 		return getStringValue(row, column.getName());
 	}
-	
+
 	@Override
 	public void render(ReportData results, String argument, OutputStream out) throws IOException, RenderingException {
 		DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
@@ -135,73 +135,73 @@ public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
 		catch (ParserConfigurationException e) {
 			throw new RenderingException(e.getLocalizedMessage(), e);
 		}
-		
+
 		// Root element
 		Document doc = docBuilder.newDocument();
 		Element rootElement = doc.createElement("patientIdStickers");
 		doc.appendChild(rootElement);
-		
+
 		// Configure sticker dimensions
 		configureStickerDimensions(rootElement);
-		
+
 		// Configure font settings
 		configureFontSettings(rootElement);
-		
+
 		// Create the sticker template element
 		Element templatePIDElement = createStickerTemplate(doc);
-		
+
 		// Handle header configuration
 		configureHeader(doc, templatePIDElement);
-		
+
 		// Process data set fields
 		processDataSetFields(results, doc, templatePIDElement);
-		
+
 		// Create multiple stickers as needed
 		createMultipleStickers(doc, templatePIDElement, rootElement);
-		
+
 		// Write the content to the output stream
 		writeToOutputStream(doc, out);
 	}
-	
+
 	private void configureStickerDimensions(Element rootElement) {
 		String stickerHeight = getInitializerService().getValueFromKey("report.patientIdSticker.size.height");
 		String stickerWidth = getInitializerService().getValueFromKey("report.patientIdSticker.size.width");
 		rootElement.setAttribute("sticker-height",isNotBlank(stickerHeight) ? stickerHeight : "297mm");
 		rootElement.setAttribute("sticker-width",isNotBlank(stickerWidth) ? stickerWidth : "297mm");
 	}
-	
+
 	private void configureFontSettings(Element rootElement) {
 		String labelFontSize = getInitializerService().getValueFromKey("report.patientIdSticker.fields.label.font.size");
 		if (isNotBlank(labelFontSize)) {
 			rootElement.setAttribute("label-font-size", labelFontSize);
 		}
-		
+
 		String labelFontFamily = getInitializerService().getValueFromKey("report.patientIdSticker.fields.label.font.family");
 		if (isNotBlank(labelFontFamily)) {
 			rootElement.setAttribute("label-font-family", labelFontFamily);
 		}
-		
+
 		String valueFontSize = getInitializerService()
 		        .getValueFromKey("report.patientIdSticker.fields.label.value.font.size");
 		if (isNotBlank(valueFontSize)) {
 			rootElement.setAttribute("value-font-size", valueFontSize);
 		}
-		
+
 		String valueFontfamily = getInitializerService()
 		        .getValueFromKey("report.patientIdSticker.fields.label.value.font.family");
 		if (isNotBlank(valueFontfamily)) {
 			rootElement.setAttribute("value-font-family", valueFontfamily);
 		}
-		
+
 		String fieldVerticalGap = getInitializerService().getValueFromKey("report.patientIdSticker.fields.label.gap");
 		if (isNotBlank(fieldVerticalGap)) {
 			rootElement.setAttribute("field-vertical-gap", fieldVerticalGap);
 		}
 	}
-	
+
 	private Element createStickerTemplate(Document doc) {
 		Element templatePIDElement = doc.createElement("patientIdSticker");
-		
+
 		// Set Label names to use in template layouts
 		MessageSourceService messageSourceService = Context.getMessageSourceService();
 		String patientIdKey = messageSourceService.getMessage("patientdocuments.patientIdSticker.fields.identifier");
@@ -212,7 +212,7 @@ public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
 		String dobKey = messageSourceService.getMessage("patientdocuments.patientIdSticker.fields.dob");
 		String ageKey = messageSourceService.getMessage("patientdocuments.patientIdSticker.fields.age");
 		String addressKey = messageSourceService.getMessage("patientdocuments.patientIdSticker.fields.fulladdress");
-		
+
 		templatePIDElement.setAttribute("addressKey", addressKey);
 		templatePIDElement.setAttribute("patientIdKey", patientIdKey);
 		templatePIDElement.setAttribute("patientSecondaryIdKey", patientSecondaryIdKey);
@@ -220,25 +220,25 @@ public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
 		templatePIDElement.setAttribute("genderKey", genderKey);
 		templatePIDElement.setAttribute("dobKey", dobKey);
 		templatePIDElement.setAttribute("ageKey", ageKey);
-		
+
 		return templatePIDElement;
 	}
-	
+
 	private void configureHeader(Document doc, Element templatePIDElement) {
 		Element header = doc.createElement("header");
 		// Handle logo if configured
 		String logoUrlPath = getInitializerService().getValueFromKey("report.patientIdSticker.logourl");
 		configureLogo(doc, header, logoUrlPath);
-		
+
 		boolean useHeader = Boolean.TRUE.equals(getInitializerService().getBooleanFromKey("report.patientIdSticker.header"));
 		if (useHeader) {
 			templatePIDElement.appendChild(header);
 		}
-		
+
 		// Include i18n strings
 		Element i18nStrings = doc.createElement("i18n");
 		List<String> i18nIds = Arrays.asList("page", "of");
-		
+
 		for (String id : i18nIds) {
 			String fqnId = String.join(".", PatientDocumentsConstants.MODULE_ARTIFACT_ID,
 			    PatientDocumentsConstants.PATIENT_ID_STICKER_ID.toLowerCase(), id);
@@ -246,16 +246,16 @@ public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
 			i18nChild.setTextContent(getMessageSourceService().getMessage(fqnId));
 			i18nStrings.appendChild(i18nChild);
 		}
-		
+
 		templatePIDElement.appendChild(i18nStrings);
 	}
-	
+
 	/**
 	 * Configures the logo for the sticker document.
-	 * 
+	 *
 	 * Loads a custom logo from {@code logoUrlPath} (relative to the {@code OPENMRS_APPLICATION_DATA_DIRECTORY}.
 	 * If not found, falls back to the OpenMRS logo from the classpath.
-	 * 
+	 *
 	 * @param doc The XML document
 	 * @param header The header element to append the logo to
 	 * @param logoUrlPath User-configured logo path (must be relative to app data dir)
@@ -316,7 +316,7 @@ public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
 
 	/**
 	 * Ensure that the  supplied {@code logoUrlPath} refers to a file in the application data directory
-	 * 
+	 *
 	 * @param logoUrlPath The user-provided logo path
 	 * @return A File object pointing to the logo if the path is valid, otherwise {@code null}
 	 */
@@ -324,36 +324,36 @@ public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
 		if (isBlank(logoUrlPath)) {
 			return null;
 		}
-		
+
 		final File appDataDir = OpenmrsUtil.getApplicationDataDirectoryAsFile();
 		try {
 			final Path appDataPath = appDataDir.toPath().toRealPath();
 			final Path logoPath = Paths.get(logoUrlPath);
-			
+
 			// Reject absolute paths
 			if (logoPath.isAbsolute()) {
 				log.error("Absolute paths are not allowed for logo files: {}", logoUrlPath);
 				return null;
 			}
-			
+
 			// For relative paths, detect path traversal by comparing absolute and normalized paths
 			final Path logoAbsolutePath = logoPath.toAbsolutePath();
 			final Path logoNormalizedPath = logoAbsolutePath.normalize();
-			
+
 			if (!logoAbsolutePath.equals(logoNormalizedPath)) {
 				log.error("Path traversal detected in logo path: {}", logoUrlPath);
 				return null;
 			}
-			
+
 			// Resolve against application data directory and validate real location
 			final Path resolvedLogoPath = appDataPath.resolve(logoUrlPath).normalize();
 			final Path resolvedLogoRealPath = resolvedLogoPath.toRealPath();
-			
+
 			if (!isPathWithinAppDataDirectory(resolvedLogoRealPath, appDataPath)) {
 				log.error("Logo path must be within the application data directory: {}", logoUrlPath);
 				return null;
 			}
-			
+
 			return resolvedLogoRealPath.toFile();
 		} catch (IllegalArgumentException e) {
 			log.error("Invalid logo path: " + logoUrlPath, e);
@@ -367,7 +367,7 @@ public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
 	private boolean isPathWithinAppDataDirectory(Path path, Path appDataPath) {
 		return path.startsWith(appDataPath);
 	}
-	
+
 	private Map<String, String> createConfigKeyMap() {
 		Map<String, String> configKeyMap = new HashMap<>();
 		configKeyMap.put("patientdocuments.patientIdSticker.fields.secondaryIdentifier",
@@ -381,10 +381,10 @@ public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
 		    "report.patientIdSticker.fields.fulladdress");
 		return configKeyMap;
 	}
-	
+
 	private boolean shouldIncludeColumn(String columnName) {
 		Map<String, String> configKeyMap = createConfigKeyMap();
-		
+
 		// Find the matching configuration key
 		for (Map.Entry<String, String> entry : configKeyMap.entrySet()) {
 			if (columnName.equals(entry.getKey())) {
@@ -396,18 +396,18 @@ public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
 				return Boolean.TRUE.equals(getInitializerService().getBooleanFromKey(entry.getValue()));
 			}
 		}
-		
+
 		return false;
 	}
-	
+
 	private void processDataSetFields(ReportData results, Document doc, Element templatePIDElement) {
 		String dataSetKey = DATASET_KEY_STICKER_FIELDS;
-		
+
 		if (results.getDataSets().containsKey(dataSetKey)) {
 			DataSet dataSet = results.getDataSets().get(dataSetKey);
 			Element fields = doc.createElement("fields");
 			templatePIDElement.appendChild(fields);
-			
+
 			MessageSourceService messageSourceService = Context.getMessageSourceService();
 			String patientIdKey = messageSourceService.getMessage("patientdocuments.patientIdSticker.fields.identifier");
 			String patientSecondaryIdKey = messageSourceService
@@ -417,19 +417,19 @@ public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
 			String dobKey = messageSourceService.getMessage("patientdocuments.patientIdSticker.fields.dob");
 			String ageKey = messageSourceService.getMessage("patientdocuments.patientIdSticker.fields.age");
 			String addressKey = messageSourceService.getMessage("patientdocuments.patientIdSticker.fields.fulladdress");
-			
+
 			// Get configured secondary ID type
 			String secondaryIdTypeUuid = getInitializerService()
 			        .getValueFromKey("report.patientIdSticker.fields.identifier.secondary.type");
-			
+
 			for (DataSetRow row : dataSet) {
 				String jsonData = (String) row.getColumnValue("patientData");
-				
+
 				if (jsonData != null) {
 					try {
 						ObjectMapper mapper = new ObjectMapper();
 						Map<String, Object> patientData = mapper.readValue(jsonData, Map.class);
-						
+
 						// Process identifiers
 						List<Map<String, Object>> identifiers = (List<Map<String, Object>>) patientData.get("identifiers");
 						String barcodeValue = null;
@@ -437,7 +437,7 @@ public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
 							boolean isPreferred = (boolean) identifier.get("preferred");
 							String identifierValue = (String) identifier.get("identifier");
 							String identifierTypeUuid = (String) identifier.get("identifierTypeUuid");
-							
+
 							if (isPreferred && shouldIncludeColumn("patientdocuments.patientIdSticker.fields.identifier")) {
 								barcodeValue = identifierValue;
 								addField(doc, fields, patientIdKey, identifierValue);
@@ -446,7 +446,7 @@ public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
 								addField(doc, fields, patientSecondaryIdKey, identifierValue);
 							}
 						}
-						
+
 						// Process name
 						if (shouldIncludeColumn("patientdocuments.patientIdSticker.fields.patientname")) {
 							String nameData = (String) patientData.get("preferredName");
@@ -454,7 +454,7 @@ public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
 								addField(doc, fields, patientNameKey, nameData);
 							}
 						}
-						
+
 						// Process gender
 						if (shouldIncludeColumn("patientdocuments.patientIdSticker.fields.gender")) {
 							String gender = (String) patientData.get("gender");
@@ -462,7 +462,7 @@ public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
 								addField(doc, fields, genderKey, gender);
 							}
 						}
-						
+
 						// Process birthdate
 						if (shouldIncludeColumn("patientdocuments.patientIdSticker.fields.dob")) {
 							String birthdate = patientData.get("birthdate") != null ? patientData.get("birthdate").toString()
@@ -471,7 +471,7 @@ public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
 								addField(doc, fields, dobKey, birthdate);
 							}
 						}
-						
+
 						// Process age
 						if (shouldIncludeColumn("patientdocuments.patientIdSticker.fields.age")) {
 							String age = patientData.get("age") != null ? patientData.get("age").toString() : null;
@@ -479,7 +479,7 @@ public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
 								addField(doc, fields, ageKey, age);
 							}
 						}
-						
+
 						// Process address
 						if (shouldIncludeColumn("patientdocuments.patientIdSticker.fields.fulladdress")) {
 							List<Map<String, String>> addressData = (List<Map<String, String>>) patientData.get("addresses");
@@ -492,13 +492,13 @@ public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
 								appendIfNotNull(address, preferredAddress.get("stateProvince"));
 								appendIfNotNull(address, preferredAddress.get("country"));
 								appendIfNotNull(address, preferredAddress.get("postalCode"));
-								
+
 								if (address.length() > 0) {
 									addField(doc, fields, addressKey, address.toString().trim());
 								}
 							}
 						}
-						
+
 						// Add barcode if enabled
 						Boolean isBarcodeEnabled = isBlank(getInitializerService().getValueFromKey("report.patientIdSticker.barcode"))
                                 ? Boolean.TRUE : getInitializerService().getBooleanFromKey("report.patientIdSticker.barcode");
@@ -507,7 +507,7 @@ public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
 							barcode.setAttribute("barcodeValue", barcodeValue);
 							templatePIDElement.appendChild(barcode);
 						}
-						
+
 					}
 					catch (Exception e) {
 						throw new RenderingException("Error processing patient JSON data", e);
@@ -516,7 +516,7 @@ public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
 			}
 		}
 	}
-	
+
 	private void addField(Document doc, Element fields, String label, String value) {
 		if (value != null && !value.trim().isEmpty()) {
 			Element fieldData = doc.createElement("field");
@@ -525,7 +525,7 @@ public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
 			fieldData.appendChild(doc.createTextNode(value));
 		}
 	}
-	
+
 	private void appendIfNotNull(StringBuilder sb, String value) {
 		if (value != null && !value.trim().isEmpty()) {
 			if (sb.length() > 0) {
@@ -534,7 +534,7 @@ public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
 			sb.append(value.trim());
 		}
 	}
-	
+
 	private void createMultipleStickers(Document doc, Element templatePIDElement, Element rootElement) {
 		String numOfIdStickersValue = getInitializerService().getValueFromKey("report.patientIdSticker.pages");
 		int numOfIdStickers = Integer.parseInt(isNotBlank(numOfIdStickersValue) ? numOfIdStickersValue : "1");
@@ -544,7 +544,7 @@ public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
 			rootElement.appendChild(clonedPidElement);
 		}
 	}
-	
+
 	private void writeToOutputStream(Document doc, OutputStream out) throws RenderingException {
 		Transformer transformer;
 		try {
@@ -553,10 +553,10 @@ public class PatientIdStickerXmlReportRenderer extends ReportDesignRenderer {
 		catch (TransformerConfigurationException | TransformerFactoryConfigurationError e) {
 			throw new RenderingException(e.getLocalizedMessage(), new Throwable(e));
 		}
-		
+
 		transformer.setOutputProperty(OutputKeys.INDENT, "yes");
 		transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-		
+
 		DOMSource source = new DOMSource(doc);
 		try {
 			transformer.transform(source, new StreamResult(out));
