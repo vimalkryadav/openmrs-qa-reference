@@ -149,3 +149,18 @@ The O3 headless suite verifies malformed/unknown JSON, Run and decoded two-row C
 The fresh replay `test-results/replays/final-20261008-r2/` passes the original first9, editor5, object10 plus4 extra, inline5 and live-update2 cases, with exact cleanup after every suite. The focused Java regression passes64 assertions. `test-results/final-runtime/artifact-proof.json` ties canonical runtime PIDs, WAR and nine loaded module hashes to compiled artifacts, and verifies preserved clinical counts and the two attachment compatibility concepts. The frontend content address now hashes the entire compiled bundle, including lazy chunks, preventing a changed chunk from retaining an unchanged entrypoint-only cache key.
 
 Proof screenshots were inspected and removed after validation as required by the workspace cleanup policy. JSON assertions, HTML/accessibility captures, decoded downloads, cleanup ledgers and original pre-fix audit evidence remain; historical screenshot paths identify the reviewed capture, not a retained deliverable.
+
+## O3 review follow-up: loading guards and blank structured parameters
+
+The schedule editor now derives Save readiness from the loaded definition and, for an existing schedule, the matching loaded request. Both the disabled button and the submit handler enforce this boundary, so pending metadata cannot bypass parameter validation or submit uninitialized values. Structured parameter validation and serialization share blank semantics: optional missing, null, empty and whitespace-only values become `[]`; required blank values remain invalid. Existing typed arrays and unrelated parameter values are preserved.
+
+Nine focused Vitest cases in the frontend patch cover both structured types, blank/required behavior, typed arrays and malformed JSON. The native source type-check and production frontend compilation passed. `node tests/headless-runtime-o3-edges.mjs` passed two live headless cases, independently holding the definition response and existing request response, attempting a forced submit while blocked, then saving the same schedule UUID with its memo preserved. The fixture uses a future schedule and never evaluates a clinical query. Its native parameters are required: required whitespace is rejected and `[]` saves. Optional-whitespace behavior is covered by the helper tests, not misrepresented as a live optional fixture. The stock parameter editor does not expose a required/optional control.
+
+Authoritative local evidence is `test-results/runtime-o3-edges-final/{results,cleanup,definition,definition-request,request-request}.json`, with accessibility captures. Earlier attempts retain fixture/harness diagnostics separately; every owned UUID and the unique fixture prefix are absent after cleanup. Only frontend assets changed in the running reference; backend modules and processes were preserved. The source-owned frontend patch, reproducible unit test and headless script are committed; generated bundles and raw local evidence remain untracked.
+
+```sh
+# After preparing the pinned editable frontend checkout:
+cd .build/esm-admin-tools/packages/esm-reports-app
+node ../../node_modules/vitest/vitest.mjs run src/components/structured-parameter.test.ts
+node ../../node_modules/typescript/bin/tsc --noEmit
+```

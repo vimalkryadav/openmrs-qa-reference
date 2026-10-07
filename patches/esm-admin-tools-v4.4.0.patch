@@ -266,7 +266,7 @@ index b118e72..f141c00 100644
 +
 +export const OFFLINE_MESSAGE = 'Remote OCL imports are disabled in this environment. Import a local ZIP file containing export.json instead.';
 diff --git a/packages/esm-reports-app/src/components/edit-scheduled-report/edit-scheduled-report-form.component.tsx b/packages/esm-reports-app/src/components/edit-scheduled-report/edit-scheduled-report-form.component.tsx
-index ec07dda..2ca7679 100644
+index ec07dda..120c166 100644
 --- a/packages/esm-reports-app/src/components/edit-scheduled-report/edit-scheduled-report-form.component.tsx
 +++ b/packages/esm-reports-app/src/components/edit-scheduled-report/edit-scheduled-report-form.component.tsx
 @@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
@@ -277,7 +277,18 @@ index ec07dda..2ca7679 100644
  import ReportParameterInput from '../report-parameter-input.component';
  import SimpleCronEditor from '../simple-cron-editor/simple-cron-editor.component';
  import styles from './edit-scheduled-report-form.scss';
-@@ -48,6 +49,7 @@ const EditScheduledReportForm: React.FC<EditScheduledReportForm> = ({
+@@ -33,7 +34,9 @@ const EditScheduledReportForm: React.FC<EditScheduledReportForm> = ({
+   const [schedule, setSchedule] = useState('');
+ 
+   const [isSubmitting, setIsSubmitting] = useState(false);
+-  const [isSubmittable, setIsSubmittable] = useState(false);
++  const isSubmittable = !!reportDefinition &&
++    (!reportRequestUuid || reportRequest?.uuid === reportRequestUuid) &&
++    !!schedule && !!renderModeUuid && parametersValid(reportDefinition.parameters ?? [], reportParameters);
+   const [ignoreChanges, setIgnoreChanges] = useState(true);
+ 
+   useEffect(() => {
+@@ -48,6 +51,7 @@ const EditScheduledReportForm: React.FC<EditScheduledReportForm> = ({
    const handleSubmit = useCallback(
      (event) => {
        event.preventDefault();
@@ -285,7 +296,7 @@ index ec07dda..2ca7679 100644
  
        setIsSubmitting(true);
  
-@@ -57,7 +59,7 @@ const EditScheduledReportForm: React.FC<EditScheduledReportForm> = ({
+@@ -57,7 +61,7 @@ const EditScheduledReportForm: React.FC<EditScheduledReportForm> = ({
            parameterizable: {
              uuid: reportDefinitionUuid,
            },
@@ -294,7 +305,7 @@ index ec07dda..2ca7679 100644
          },
          renderingMode: {
            argument: renderModeUuid,
-@@ -77,18 +79,18 @@ const EditScheduledReportForm: React.FC<EditScheduledReportForm> = ({
+@@ -77,18 +81,18 @@ const EditScheduledReportForm: React.FC<EditScheduledReportForm> = ({
              closePanel();
              setIsSubmitting(false);
            },
@@ -317,19 +328,18 @@ index ec07dda..2ca7679 100644
    );
  
    const handleOnChange = () => {
-@@ -100,8 +102,9 @@ const EditScheduledReportForm: React.FC<EditScheduledReportForm> = ({
+@@ -99,10 +103,6 @@ const EditScheduledReportForm: React.FC<EditScheduledReportForm> = ({
+     setSchedule(isValid ? cron : '');
    };
  
-   useEffect(() => {
+-  useEffect(() => {
 -    setIsSubmittable(!!schedule && !!renderModeUuid);
 -  }, [schedule, renderModeUuid]);
-+    setIsSubmittable(!!schedule && !!renderModeUuid &&
-+      parametersValid(reportDefinition?.parameters ?? [], reportParameters));
-+  }, [schedule, renderModeUuid, reportDefinition?.parameters, reportParameters]);
- 
+-
    return (
      <Form className={styles.desktopEditSchedule} onChange={handleOnChange} onSubmit={handleSubmit}>
-@@ -117,7 +120,7 @@ const EditScheduledReportForm: React.FC<EditScheduledReportForm> = ({
+       <Stack gap={8} className={styles.container}>
+@@ -117,7 +117,7 @@ const EditScheduledReportForm: React.FC<EditScheduledReportForm> = ({
                  [parameter.name]: parameterValue,
                }));
              }}
@@ -795,12 +805,42 @@ index 1eb8402..389bed6 100644
        time: { hours: parseInt(openMRSCron.hours), minutes: parseInt(openMRSCron.minutes) },
        cron: null,
      };
+diff --git a/packages/esm-reports-app/src/components/structured-parameter.test.ts b/packages/esm-reports-app/src/components/structured-parameter.test.ts
+new file mode 100644
+index 0000000..66d5130
+--- /dev/null
++++ b/packages/esm-reports-app/src/components/structured-parameter.test.ts
+@@ -0,0 +1,24 @@
++import { describe, expect, it } from 'vitest';
++import { parameterPayload, parametersValid, structuredError, structuredTypes } from './structured-parameter';
++
++describe('structured parameter submission', () => {
++  for (const type of structuredTypes) {
++    it.each([undefined, null, '', '  \n\t'])('normalizes optional blank %s for ' + type, (value) => {
++      const parameters = [{ name: 'columns', type }];
++      expect(structuredError(value, type)).toBe('');
++      expect(parametersValid(parameters, { columns: value })).toBe(true);
++      expect(parameterPayload(parameters, { columns: value, memo: 'preserved' })).toEqual({ columns: [], memo: 'preserved' });
++      expect(parametersValid([{ ...parameters[0], required: true }], { columns: value })).toBe(false);
++    });
++  }
++  it('retains typed arrays and rejects malformed or wrong-shaped JSON', () => {
++    const type = structuredTypes[1];
++    const parameters = [{ name: 'sorts', type }];
++    const sorts = [{ column: 'ID', direction: 'ASC' }];
++    expect(parameterPayload(parameters, { sorts })).toEqual({ sorts });
++    expect(parameterPayload(parameters, { sorts: JSON.stringify(sorts) })).toEqual({ sorts });
++    for (const value of ['{bad', '{}', '[{"column":"ID","direction":"INVALID"}]']) {
++      expect(parametersValid(parameters, { sorts: value })).toBe(false);
++    }
++  });
++});
 diff --git a/packages/esm-reports-app/src/components/structured-parameter.tsx b/packages/esm-reports-app/src/components/structured-parameter.tsx
 new file mode 100644
-index 0000000..46cb5a7
+index 0000000..aabb800
 --- /dev/null
 +++ b/packages/esm-reports-app/src/components/structured-parameter.tsx
-@@ -0,0 +1,68 @@
+@@ -0,0 +1,71 @@
 +import React from 'react';
 +import { TextArea } from '@carbon/react';
 +
@@ -815,7 +855,7 @@ index 0000000..46cb5a7
 +  return typeof value === 'string' ? value : value == null ? '' : JSON.stringify(value, null, 2);
 +}
 +export function structuredError(value: unknown, type?: string): string {
-+  if (value == null || value === '') return '';
++  if (value == null || (typeof value === 'string' && !value.trim())) return '';
 +  try {
 +    const parsed: unknown = typeof value === 'string' ? JSON.parse(value) : value;
 +    if (!Array.isArray(parsed) || parsed.some((item) => !item || typeof item !== 'object' || Array.isArray(item))) {
@@ -846,7 +886,8 @@ index 0000000..46cb5a7
 +export function parametersValid(parameters: ParameterShape[], values: Record<string, unknown>): boolean {
 +  return parameters.every((parameter) => {
 +    const value = values[parameter.name];
-+    return (!parameter.required || (value != null && value !== '')) &&
++    const present = value != null && (typeof value !== 'string' || !!value.trim());
++    return (!parameter.required || present) &&
 +      (!isStructured(parameter.type) || !structuredError(value, parameter.type));
 +  });
 +}
@@ -854,7 +895,9 @@ index 0000000..46cb5a7
 +  const result = { ...values };
 +  parameters.forEach((parameter) => {
 +    const value = result[parameter.name];
-+    if (isStructured(parameter.type) && typeof value === 'string' && value.trim()) result[parameter.name] = JSON.parse(value);
++    if (isStructured(parameter.type) && (value == null || typeof value === 'string')) {
++      result[parameter.name] = typeof value === 'string' && value.trim() ? JSON.parse(value) : [];
++    }
 +  });
 +  return result;
 +}
