@@ -110,3 +110,18 @@ The source gate passes54 focused Java assertions, including strict dates and sta
 After proof fixtures were removed, `tests/reconcile-reporting-baseline.py` compared the complete current Reports UUID sets against the immutable seed and the pre-audit snapshot. It refused unknown/missing rows and changed target metadata, checked external dependencies, and then removed only the approved five old QA definitions, one design and two requests through the existing APIs. The original seed was opened with SQLite read-only/immutable mode and never modified. Clinical tables and configuration were untouched.
 
 `test-results/baseline-reconciliation/applied.json` records names/UUIDs, before metadata, dependency checks, each deletion and the final exact seed UUID-set matches:6 serialized definitions,2 designs,33 requests,1 processor. The earlier B4 cleanup snapshot intentionally predates this separately authorized baseline change.
+
+## Approved clinical baseline reconciliation
+
+After explicit authorization to remove reference-only clinical test data, `tests/reconcile-clinical-baseline.py` compared reviewed UUID roots and their complete incoming foreign-key dependency closure against the immutable large `data.db` seed. It rejects any seed primary key or UUID, unexpected key-set drift, non-InnoDB target, trigger, unaccounted conventional foreign-key-less reference, changed target snapshot or disabled FK enforcement. The dry run is read-only; `--rollback` executes and verifies the entire transaction without committing; `--apply` commits only after all checks pass. The test environment requires PyMySQL1.1.2.
+
+The applied transaction removed98 exact extra/dependent rows across15 tables, including8 people/patients,3 encounters,1 new visit and4 additional flags. All15 affected tables now have exactly the seed primary-key/UUID sets. The existing seed patient and visit referenced by an extra encounter retained all native field values. The original seed file was unchanged. This is a key-set and explicitly scoped parent-field proof, not a claim that every field of every table is identical between database engines.
+
+`test-results/clinical-reconciliation/{rollback,apply}.json` retains bounded per-row recovery metadata, dependency edges, action counts and streamed key-set digests. `post-restart.json` confirms core counts and flags remain aligned after the actual canonical native reload. The baseline is person1392354,patient1383925,provider8429,encounter388980,cohort935,visit125047 and patientflags_patient_flag6553. No FK checks were disabled and no clinical row was selected by a numeric high-water cutoff.
+
+Example invocation (reviewed evidence stays local and is not committed):
+
+```sh
+.venv/bin/python tests/reconcile-clinical-baseline.py --seed "$SEED_DB" --evidence "$REVIEWED_TARGETS" --rollback
+.venv/bin/python tests/reconcile-clinical-baseline.py --seed "$SEED_DB" --evidence "$REVIEWED_TARGETS" --apply
+```
