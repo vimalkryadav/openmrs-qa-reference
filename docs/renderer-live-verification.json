@@ -1,0 +1,105 @@
+[
+  {
+    "renderer": "CsvReportRenderer",
+    "create": 302,
+    "uuid": "2a95db8b-5125-4dfc-8b74-85990b22c72d",
+    "submit": 201,
+    "request": "f2afb27d-7a24-4883-b308-204908b5ab9b",
+    "status": "COMPLETED",
+    "download_status": 200,
+    "download_keys": [
+      "filename",
+      "contentType",
+      "fileContent"
+    ],
+    "bytes": 134,
+    "request_delete": 204,
+    "design_delete": 302
+  },
+  {
+    "renderer": "TsvReportRenderer",
+    "create": 302,
+    "uuid": "3c74d992-c9d2-4541-b603-fd82a4921525",
+    "submit": 201,
+    "request": "0a4d9d1d-469e-4fda-a570-ace6c44bed0f",
+    "status": "COMPLETED",
+    "download_status": 200,
+    "download_keys": [
+      "filename",
+      "contentType",
+      "fileContent"
+    ],
+    "bytes": 134,
+    "request_delete": 204,
+    "design_delete": 302
+  },
+  {
+    "renderer": "XlsReportRenderer",
+    "create": 302,
+    "uuid": "230f80aa-81c7-4788-a110-76ee7ae430ee",
+    "submit": 201,
+    "request": "5647b835-0526-4000-a12c-dd3cda335fbe",
+    "status": "COMPLETED",
+    "download_status": 200,
+    "download_keys": [
+      "filename",
+      "contentType",
+      "fileContent"
+    ],
+    "bytes": 4702,
+    "request_delete": 204,
+    "design_delete": 302
+  },
+  {
+    "renderer": "SimpleHtmlReportRenderer",
+    "create": 302,
+    "uuid": "68da037d-7fb7-4b69-9ec7-4034ea4ec91a",
+    "submit": 201,
+    "request": "edc71f0e-3c06-4249-b12d-bef22a758870",
+    "status": "COMPLETED",
+    "download_status": 200,
+    "download_keys": [
+      "filename",
+      "contentType",
+      "fileContent"
+    ],
+    "bytes": 390,
+    "request_delete": 204,
+    "design_delete": 302
+  },
+  {
+    "renderer": "XmlReportRenderer",
+    "create": 302,
+    "uuid": "6aed7179-8481-44b7-9095-38e584d09b06",
+    "submit": 201,
+    "request": "5c7db3c9-2b1f-47a8-94e6-10ee3f385365",
+    "status": "COMPLETED",
+    "download_status": 200,
+    "download_keys": [
+      "filename",
+      "contentType",
+      "fileContent"
+    ],
+    "bytes": 260,
+    "request_delete": 204,
+    "design_delete": 302
+  },
+  {
+    "renderer": "TextTemplateRenderer",
+    "create": 302,
+    "uuid": "d091d289-639e-4948-bf06-8d4a38027083",
+    "template_save": 302,
+    "submit": 201,
+    "request": "04c57241-cdfc-4ed4-a1a0-507220eeb240",
+    "status": "COMPLETED",
+    "download_status": 200,
+    "download_keys": [
+      "filename",
+      "contentType",
+      "fileContent"
+    ],
+    "bytes": 134,
+    "request_delete": 204,
+    "design_delete": 302
+  }
+]

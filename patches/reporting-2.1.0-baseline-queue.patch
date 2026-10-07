@@ -1,0 +1,12 @@
+diff --git a/omod/src/main/resources/webModuleApplicationContext.xml b/omod/src/main/resources/webModuleApplicationContext.xml
+index 26c9f4cb..24b75200 100644
+--- a/omod/src/main/resources/webModuleApplicationContext.xml
++++ b/omod/src/main/resources/webModuleApplicationContext.xml
+@@ -40,6 +40,7 @@
+             	<prop key="**/scheduledReports.portlet">scheduledReportsPortletController</prop>
+             	<prop key="**/runReport.portlet">runReportPortletController</prop>
+             	<prop key="**/reportRequests.portlet">reportRequestPortletController</prop>
++            	<prop key="**/manageReportQueue.portlet">manageReportQueuePortletController</prop>
+             	<prop key="**/reportList.portlet">reportListPortletController</prop>
+ 				<prop key="module/reporting/run/runReport.list">runReportList</prop>
+ 				<prop key="module/reporting/run/runReport.form">runReportForm</prop>

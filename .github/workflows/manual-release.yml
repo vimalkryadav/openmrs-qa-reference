@@ -1,0 +1,40 @@
+name: Manual reference release
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: New reviewed release tag
+        required: true
+        type: string
+      publish:
+        description: Publish to configured public ECR registry (requires release credentials)
+        required: true
+        default: false
+        type: boolean
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate source and manual-only workflow
+        run: python3 scripts/validate.py
+  release:
+    needs: validate
+    if: inputs.publish
+    runs-on: ubuntu-latest
+    environment: reference-release
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.REFERENCE_AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.REFERENCE_AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: us-east-1
+      RELEASE_TAG: ${{ inputs.release_tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Login to existing public ECR registry
+        run: aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
+      - name: Explicitly build and publish reviewed source
+        run: scripts/build-images.sh "$RELEASE_TAG" --push

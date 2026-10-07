@@ -1,0 +1,50 @@
+{
+  "headless": true,
+  "origin": "http://localhost:8090",
+  "results": [
+    {
+      "name": "Legacy login with fixed admin credentials",
+      "status": "passed"
+    },
+    {
+      "name": "Converter edit survives hard reload",
+      "status": "passed"
+    },
+    {
+      "name": "Malformed converter map is rejected without saving",
+      "status": "passed"
+    },
+    {
+      "name": "Converter preview produces database-backed values",
+      "status": "passed"
+    },
+    {
+      "name": "Row-per-patient dataset preview",
+      "status": "blocked",
+      "reason": "Unbounded preview confirmed; source fix compiles but image rebuild is paused by user"
+    },
+    {
+      "name": "Row-per-patient columns save and reload",
+      "status": "passed"
+    },
+    {
+      "name": "Period label edit preserves embedded indicator",
+      "status": "passed"
+    },
+    {
+      "name": "Run report, reload history and download CSV",
+      "status": "passed"
+    },
+    {
+      "name": "Schedule once persists after reload",
+      "status": "passed"
+    },
+    {
+      "name": "SPA Reports dashboard loads",
+      "status": "passed"
+    }
+  ],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "failedRequests": []
+}

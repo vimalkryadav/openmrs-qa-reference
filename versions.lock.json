@@ -1,0 +1,59 @@
+{
+  "images": {
+    "db": "public.ecr.aws/x9d4j8f0/openmrs-qa-db@sha256:b4f6b1834397172579d981f22b8ed78922337dd7ca916a5c4343213edac3d663",
+    "backend": "public.ecr.aws/x9d4j8f0/openmrs-qa-backend@sha256:6445f410681cabf2badd5c0d4dd07a5b3f56080c9732827c0541f2c8dddddf5e",
+    "frontend": "public.ecr.aws/x9d4j8f0/openmrs-qa-frontend@sha256:a36bcc775dd88e93fcd9ae58a941238b4348296ec3e27e2c4e90d8e2e69f690a",
+    "gateway": "public.ecr.aws/x9d4j8f0/openmrs-qa-gateway@sha256:d31b58ef0e8b86a675878a3f8da8f752911041378c538cca0c0aef553dc67b9c",
+    "node": "node@sha256:363e1587494626837fa7f9a23bdb453d13b0ff3c67c705c2805cfc69c2d2fad7"
+  },
+  "sources": {
+    "esm-admin-tools": {
+      "url": "https://github.com/openmrs/openmrs-esm-admin-tools.git",
+      "ref": "35ffc17cc72467912275819dec9459d5c085f721",
+      "version": "4.4.0"
+    },
+    "reporting": {
+      "url": "https://github.com/openmrs/openmrs-module-reporting.git",
+      "ref": "9ad110f97d2a0a1eaa4a1a2100fcdb8d785ca6a8",
+      "version": "2.1.0"
+    },
+    "logic": {
+      "url": "https://github.com/openmrs/openmrs-module-logic.git",
+      "ref": "e980d1e01993f79f6ac8f54037eb49c26dbfdb9d",
+      "version": "0.5.5"
+    },
+    "core": {
+      "url": "https://github.com/openmrs/openmrs-core.git",
+      "ref": "ec7f4d4a59652b7700aa0cd551b79bfb1e99be9d",
+      "version": "2.8.8"
+    },
+    "legacyui": {
+      "url": "https://github.com/openmrs/openmrs-module-legacyui.git",
+      "ref": "bb1a441d4b28bd27b4e5655e3fa6df410a0a977a",
+      "version": "2.1.0"
+    },
+    "cohort": {
+      "url": "https://github.com/openmrs/openmrs-module-cohort.git",
+      "ref": "df3190ab34ed8c80c7d81f730f37070a2c76c6b4",
+      "version": "3.7.3"
+    },
+    "patientdocuments": {
+      "url": "https://github.com/openmrs/openmrs-module-patientdocuments.git",
+      "ref": "def6ec4dbd3b18373a6ac463ede9690a42538d08",
+      "version": "1.1.0"
+    },
+    "openconceptlab": {
+      "url": "https://github.com/openmrs/openmrs-module-openconceptlab.git",
+      "ref": "4d7cec5702f106f418dc11ec03b82cd73ffc8de0",
+      "version": "3.1.0"
+    }
+  },
+  "runtime": {
+    "core": "2.8.8",
+    "legacyui": "2.1.0",
+    "cohort": "3.7.3",
+    "patientdocuments": "1.1.0",
+    "openconceptlab": "3.1.0",
+    "clock": "2026-09-29 09:00:00 UTC"
+  }
+}

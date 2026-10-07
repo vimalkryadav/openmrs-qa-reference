@@ -1,0 +1,72 @@
+# OpenMRS O3 reference for QA: the fixed build with the de-identified US dataset.
+# Not for clinical use. Instructions: README.md next to this file.
+#
+# Version: all reference images use one release tag. This release upgrades existing
+# data volumes in place. Use docker compose pull && docker compose up -d.
+# Only an explicitly requested reset should remove volumes.
+#
+# Credentials here (DB user openmrs/openmrs, admin/Admin123) are fixed, non-secret test
+# values baked into the images. The database is not published to the host.
+name: openmrs-qa
+
+services:
+  db:
+    image: public.ecr.aws/x9d4j8f0/openmrs-qa-db:${QA_TAG:-2026-10-07-legacy-qa}
+    # The image's entrypoint pins the database clock to OPENMRS_DEMO_TIME (set in the image).
+    # Inherit the image healthcheck, which waits for the compatibility SQL patch.
+    mem_limit: "${OPENMRS_DB_MEMORY:-3g}"
+    volumes:
+      # Seeded from the image (the loaded, de-identified database) on first use.
+      - db-data:/var/lib/mysql-qa
+    restart: unless-stopped
+
+  backend:
+    image: public.ecr.aws/x9d4j8f0/openmrs-qa-backend:${QA_TAG:-2026-10-07-legacy-qa}
+    # Leave room outside the 8 GiB Java heap for native memory.
+    mem_limit: "${OPENMRS_BACKEND_MEMORY:-10g}"
+    environment:
+      OMRS_JAVA_MEMORY_OPTS: "${OPENMRS_JAVA_MEMORY_OPTS:--Xms1g -Xmx8g -XX:+ExitOnOutOfMemoryError}"
+    # DB connection, admin password and the demo clock remain set in the image.
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/openmrs/ws/rest/v1/session | grep -q authenticated"]
+      interval: 15s
+      timeout: 10s
+      retries: 240
+      start_period: 60s
+    volumes:
+      # Seeded from the image (modules, attachments, search index) on first use.
+      - openmrs-data:/openmrs/data
+    restart: unless-stopped
+
+  frontend:
+    image: public.ecr.aws/x9d4j8f0/openmrs-qa-frontend:${QA_TAG:-2026-10-07-legacy-qa}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  gateway:
+    image: public.ecr.aws/x9d4j8f0/openmrs-qa-gateway:${QA_TAG:-2026-10-07-legacy-qa}
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost/openmrs/spa/home >/dev/null && curl -fsS http://localhost/openmrs/ws/rest/v1/session | grep -q authenticated"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+    ports:
+      # Browser address: http://localhost:<OPENMRS_PORT>/openmrs/spa (default 8090).
+      - "127.0.0.1:${OPENMRS_PORT:-8090}:80"
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  openmrs-data:

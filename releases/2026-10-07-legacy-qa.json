@@ -1,0 +1,114 @@
+{
+  "db": {
+    "tag": "public.ecr.aws/x9d4j8f0/openmrs-qa-db:2026-10-07-legacy-qa",
+    "digest": "sha256:b4f6b1834397172579d981f22b8ed78922337dd7ca916a5c4343213edac3d663",
+    "platforms": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "manifests": [
+      {
+        "mediaType": "application/vnd.oci.image.manifest.v1+json",
+        "digest": "sha256:8d26232ac628df570229709e5dd364a1d7b507726aa165ee214724bc142c239b",
+        "size": 3915,
+        "platform": {
+          "architecture": "amd64",
+          "os": "linux"
+        }
+      },
+      {
+        "mediaType": "application/vnd.oci.image.manifest.v1+json",
+        "digest": "sha256:229b972ea78f7885d8c99d2104c007642eba7f01cad99e9f6fb2cb163c3da4bf",
+        "size": 3915,
+        "platform": {
+          "architecture": "arm64",
+          "os": "linux"
+        }
+      }
+    ]
+  },
+  "backend": {
+    "tag": "public.ecr.aws/x9d4j8f0/openmrs-qa-backend:2026-10-07-legacy-qa",
+    "digest": "sha256:6445f410681cabf2badd5c0d4dd07a5b3f56080c9732827c0541f2c8dddddf5e",
+    "platforms": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "manifests": [
+      {
+        "mediaType": "application/vnd.oci.image.manifest.v1+json",
+        "digest": "sha256:8cd2aef3de65d1cd499b487d3beb7c7da3900d9d1674205be73cd2a59aa9a2a9",
+        "size": 7339,
+        "platform": {
+          "architecture": "amd64",
+          "os": "linux"
+        }
+      },
+      {
+        "mediaType": "application/vnd.oci.image.manifest.v1+json",
+        "digest": "sha256:803f549a6dd42431ac2a5e2cbbbfe95621bec692f0926ba1a41b069dae1d1784",
+        "size": 7339,
+        "platform": {
+          "architecture": "arm64",
+          "os": "linux"
+        }
+      }
+    ]
+  },
+  "frontend": {
+    "tag": "public.ecr.aws/x9d4j8f0/openmrs-qa-frontend:2026-10-07-legacy-qa",
+    "digest": "sha256:a36bcc775dd88e93fcd9ae58a941238b4348296ec3e27e2c4e90d8e2e69f690a",
+    "platforms": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "manifests": [
+      {
+        "mediaType": "application/vnd.oci.image.manifest.v1+json",
+        "digest": "sha256:79d00077472b24dbf381ef948a681d7aaec87b07b299a56f72a1ce80431424c3",
+        "size": 4475,
+        "platform": {
+          "architecture": "amd64",
+          "os": "linux"
+        }
+      },
+      {
+        "mediaType": "application/vnd.oci.image.manifest.v1+json",
+        "digest": "sha256:43c5a1d00b1225c8d4c5d7004325b4e57938abf3d728e6b0d23f05519fcc5a52",
+        "size": 4475,
+        "platform": {
+          "architecture": "arm64",
+          "os": "linux"
+        }
+      }
+    ]
+  },
+  "gateway": {
+    "tag": "public.ecr.aws/x9d4j8f0/openmrs-qa-gateway:2026-10-07-legacy-qa",
+    "digest": "sha256:d31b58ef0e8b86a675878a3f8da8f752911041378c538cca0c0aef553dc67b9c",
+    "platforms": [
+      "linux/amd64",
+      "linux/arm64"
+    ],
+    "manifests": [
+      {
+        "mediaType": "application/vnd.oci.image.manifest.v1+json",
+        "digest": "sha256:6f07e21f89d518e2e84012c8bb6c23188436ddcdc60f4bf54e03ca10e14130d7",
+        "size": 3506,
+        "platform": {
+          "architecture": "amd64",
+          "os": "linux"
+        }
+      },
+      {
+        "mediaType": "application/vnd.oci.image.manifest.v1+json",
+        "digest": "sha256:dd7bd1c197f490f19a1b9b35f8be8b674e3798c545ad7efc16e24712efff411a",
+        "size": 3506,
+        "platform": {
+          "architecture": "arm64",
+          "os": "linux"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,51 @@
+[
+  {
+    "filename": "QA_Reports_flow_20261007_disposable_2026-09-29_090000.csv",
+    "contentType": "text/csv",
+    "renderer": "CsvReportRenderer-download.json",
+    "bytes": 15,
+    "text": "\"result\"\r\n\"1\"\r\n"
+  },
+  {
+    "filename": "QA_Reports_flow_20261007_disposable_2026-09-29_09:00:00.html",
+    "contentType": "text/html",
+    "renderer": "SimpleHtmlReportRenderer-download.json",
+    "bytes": 202,
+    "text": "<html><head><meta charset=\"UTF-8\"></head><body><h4>result</h4><table id=\"simple-html-dataset-result\" class=\"display simple-html-dataset\"><tr><th>result</th></tr><tr><td>1</td></tr></table></body></html>"
+  },
+  {
+    "filename": "QA_Reports_flow_20261007_disposable_2026-09-29_09:00:00.html",
+    "contentType": "text/html",
+    "renderer": "TextTemplateRenderer-download.json",
+    "bytes": 10,
+    "text": "QA value 1"
+  },
+  {
+    "filename": "QA_Reports_flow_20261007_disposable_2026-09-29_090000.tsv",
+    "contentType": "text/tsv",
+    "renderer": "TsvReportRenderer-download.json",
+    "bytes": 15,
+    "text": "\"result\"\r\n\"1\"\r\n"
+  },
+  {
+    "filename": "QA_Reports_flow_20261007_disposable_2026-09-29_09:00:00.xlsx",
+    "contentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "renderer": "XlsReportRenderer-download.json",
+    "bytes": 3396,
+    "cells": [
+      [
+        "result"
+      ],
+      [
+        1.0
+      ]
+    ]
+  },
+  {
+    "filename": "QA_Reports_flow_20261007_disposable_2026-09-29_09:00:00.xml",
+    "contentType": "text/xml",
+    "renderer": "XmlReportRenderer-download.json",
+    "bytes": 106,
+    "text": "<?xml version=\"1.0\"?>\n<dataset name=\"result\">\n\t<rows>\n\t\t<row><result>1</result></row>\n\t</rows>\n</dataset>\n"
+  }
+]

@@ -1,0 +1,1661 @@
+diff --git a/packages/esm-admin-openconceptlab-app/src/import/import.component.tsx b/packages/esm-admin-openconceptlab-app/src/import/import.component.tsx
+index 1c8cf80..056e8c6 100644
+--- a/packages/esm-admin-openconceptlab-app/src/import/import.component.tsx
++++ b/packages/esm-admin-openconceptlab-app/src/import/import.component.tsx
+@@ -1,4 +1,5 @@
+ import React, { useCallback, useEffect, useState } from 'react';
++import { useSWRConfig } from 'swr';
+ import {
+   Button,
+   ButtonSkeleton,
+@@ -15,12 +16,14 @@ import {
+ import { useTranslation } from 'react-i18next';
+ import { showNotification } from '@openmrs/esm-framework';
+ import { startImportWithFile, startImportWithSubscription, useSubscription } from './import.resource';
++import { getErrorMessage, PREVIOUS_IMPORTS_URL } from '../utils';
+ import styles from './import.scss';
+ 
+ const allowedMimeTypes = ['application/zip', 'application/x-zip-compressed'];
+ 
+ const Import: React.FC = () => {
+   const { t } = useTranslation();
++  const { mutate } = useSWRConfig();
+   const [isSubscriptionAvailable, setIsSubscriptionAvailable] = useState(false);
+   const [file, setFile] = useState<File>();
+   const [isFileUploading, setIsFileUploading] = useState(false);
+@@ -66,21 +69,22 @@ const Import: React.FC = () => {
+       }
+ 
+       const abortController = new AbortController();
+-      const response = await startImportWithSubscription(abortController);
+-
+-      if (response.status === 201) {
++      try {
++        await startImportWithSubscription(abortController);
+         showNotification({
+           kind: 'success',
+           description: t('importSuccess', 'Import started successfully'),
+         });
+-      } else {
++        mutate(PREVIOUS_IMPORTS_URL);
++      } catch (error) {
+         showNotification({
+           kind: 'error',
+-          description: t('importFailed', 'Import failed'),
++          title: t('importFailed', 'Import failed'),
++          description: getErrorMessage(error),
+         });
+       }
+     },
+-    [isSubscriptionAvailable, t],
++    [isSubscriptionAvailable, t, mutate],
+   );
+ 
+   const handleImportWithFile = useCallback(
+@@ -99,24 +103,25 @@ const Import: React.FC = () => {
+       }
+ 
+       const abortController = new AbortController();
+-      const response = await startImportWithFile(file, abortController);
+-
+-      if (response.status === 201) {
++      try {
++        await startImportWithFile(file, abortController);
+         setFile(null);
+-        setIsFileUploading(false);
+         showNotification({
+           kind: 'success',
+           description: t('importSuccess', 'Import started successfully'),
+         });
+-      } else {
+-        setIsFileUploading(false);
++        mutate(PREVIOUS_IMPORTS_URL);
++      } catch (error) {
+         showNotification({
+           kind: 'error',
+-          description: t('importFailed', 'Import failed'),
++          title: t('importFailed', 'Import failed'),
++          description: getErrorMessage(error),
+         });
++      } finally {
++        setIsFileUploading(false);
+       }
+     },
+-    [file, t],
++    [file, t, mutate],
+   );
+ 
+   if (isLoading) {
+diff --git a/packages/esm-admin-openconceptlab-app/src/subscription/subscription.component.tsx b/packages/esm-admin-openconceptlab-app/src/subscription/subscription.component.tsx
+index 7a10f8e..b40ce2c 100644
+--- a/packages/esm-admin-openconceptlab-app/src/subscription/subscription.component.tsx
++++ b/packages/esm-admin-openconceptlab-app/src/subscription/subscription.component.tsx
+@@ -18,7 +18,7 @@ import {
+ import { useTranslation } from 'react-i18next';
+ import { showNotification } from '@openmrs/esm-framework';
+ import { deleteSubscription, updateSubscription, useSubscription } from './subscription.resource';
+-import { isVersionDefinedInUrl } from '../utils';
++import { getErrorMessage, isVersionDefinedInUrl, PREVIOUS_IMPORTS_URL, SUBSCRIPTION_URL } from '../utils';
+ import styles from './subscription.scss';
+ 
+ const Subscription: React.FC = () => {
+@@ -89,12 +89,11 @@ const Subscription: React.FC = () => {
+         validationType: validationType,
+         subscribedToSnapshot: isSubscribedToSnapshot,
+       };
+-      mutate('/ws/rest/v1/openconceptlab/subscription?v=full', updatedSubscription, false);
++      // The cache holds the whole response, so the optimistic value has the same shape.
++      mutate(SUBSCRIPTION_URL, { data: { results: [updatedSubscription] } }, false);
+ 
+-      const response = await updateSubscription(updatedSubscription, abortController);
+-      mutate('/ws/rest/v1/openconceptlab/subscription?v=full');
+-
+-      if (response.ok) {
++      try {
++        const response = await updateSubscription(updatedSubscription, abortController);
+         showNotification({
+           kind: 'success',
+           description: t(
+@@ -102,13 +101,15 @@ const Subscription: React.FC = () => {
+             response.status === 201 ? 'Subscription created successfully' : 'Subscription updated successfully',
+           ),
+         });
+-      } else {
++      } catch (error) {
+         showNotification({
+           title: t('errorSavingSubscription', 'Error occured while saving the subscription'),
+           kind: 'error',
+           critical: true,
+-          description: JSON.stringify(response.data),
++          description: getErrorMessage(error),
+         });
++      } finally {
++        mutate(SUBSCRIPTION_URL);
+       }
+ 
+       return () => abortController.abort();
+@@ -135,10 +136,8 @@ const Subscription: React.FC = () => {
+       evt.stopPropagation();
+       const abortController = new AbortController();
+ 
+-      const response = await deleteSubscription(subscription, abortController);
+-      mutate('/ws/rest/v1/openconceptlab/subscription?v=full');
+-
+-      if (response.status === 204) {
++      try {
++        await deleteSubscription(subscription, abortController);
+         setSubscriptionUrl('');
+         setToken('');
+         setIsSubscribedToSnapshot(false);
+@@ -148,13 +147,17 @@ const Subscription: React.FC = () => {
+           kind: 'success',
+           description: t('subscriptionDeleted', 'Successfully unsubscribed'),
+         });
+-      } else {
++      } catch (error) {
+         showNotification({
+           title: t('errorDeletingSubscription', 'Error occured while deleting the subscription'),
+           kind: 'error',
+           critical: true,
+-          description: JSON.stringify(response.data),
++          description: getErrorMessage(error),
+         });
++      } finally {
++        mutate(SUBSCRIPTION_URL);
++        // Unsubscribing also deletes the subscription's imports on the server.
++        mutate(PREVIOUS_IMPORTS_URL);
+       }
+ 
+       return () => abortController.abort();
+diff --git a/packages/esm-admin-openconceptlab-app/src/utils.ts b/packages/esm-admin-openconceptlab-app/src/utils.ts
+index b118e72..df568b6 100644
+--- a/packages/esm-admin-openconceptlab-app/src/utils.ts
++++ b/packages/esm-admin-openconceptlab-app/src/utils.ts
+@@ -1,5 +1,13 @@
+ const NUMBER_OF_SLASHES_AFTER_BASE_URL = 5;
+ 
++export const SUBSCRIPTION_URL = '/ws/rest/v1/openconceptlab/subscription?v=full';
++export const PREVIOUS_IMPORTS_URL = '/ws/rest/v1/openconceptlab/import?v=full';
++
++/*
++ * openmrsFetch rejects on a non-2xx response; this reads the server's own message from that rejection.
++ */
++export const getErrorMessage = (error) => error?.responseBody?.error?.message ?? error?.message;
++
+ /*
+  * This checks if collection version has been passed to subscription url by checking number of forward slashes after base url
+  * If the number is 5, such as with https://api.openconceptlab.org/users/username/collections/collectionname/v1.0
+diff --git a/packages/esm-reports-app/src/components/edit-scheduled-report/edit-scheduled-report-form.component.tsx b/packages/esm-reports-app/src/components/edit-scheduled-report/edit-scheduled-report-form.component.tsx
+index ec07dda..d2dd5a5 100644
+--- a/packages/esm-reports-app/src/components/edit-scheduled-report/edit-scheduled-report-form.component.tsx
++++ b/packages/esm-reports-app/src/components/edit-scheduled-report/edit-scheduled-report-form.component.tsx
+@@ -77,13 +77,13 @@ const EditScheduledReportForm: React.FC<EditScheduledReportForm> = ({
+             closePanel();
+             setIsSubmitting(false);
+           },
+-          () => {
++          (error) => {
++            // Keep the panel open so the schedule and parameters are not lost, and say why the save failed.
+             showSnackbar({
+               kind: 'error',
+               title: t('reportScheduledErrorMsg', 'Failed to schedule a report'),
+-              subtitle: t('reportScheduledErrorMsg', 'Failed to schedule a report'),
++              subtitle: error?.responseBody?.error?.message ?? error?.message,
+             });
+-            closePanel();
+             setIsSubmitting(false);
+           },
+         );
+@@ -100,8 +100,9 @@ const EditScheduledReportForm: React.FC<EditScheduledReportForm> = ({
+   };
+ 
+   useEffect(() => {
+-    setIsSubmittable(!!schedule && !!renderModeUuid);
+-  }, [schedule, renderModeUuid]);
++    setIsSubmittable(!!schedule && !!renderModeUuid &&
++      (reportDefinition?.parameters ?? []).every((parameter) => !parameter.required || !!reportParameters[parameter.name]));
++  }, [schedule, renderModeUuid, reportDefinition?.parameters, reportParameters]);
+ 
+   return (
+     <Form className={styles.desktopEditSchedule} onChange={handleOnChange} onSubmit={handleSubmit}>
+@@ -117,7 +118,7 @@ const EditScheduledReportForm: React.FC<EditScheduledReportForm> = ({
+                 [parameter.name]: parameterValue,
+               }));
+             }}
+-            value={reportRequest?.parameterMappings[parameter.name]}
++            value={reportParameters[parameter.name]}
+           />
+         ))}
+         <div className={styles.outputFormatDiv}>
+diff --git a/packages/esm-reports-app/src/components/next-report-execution.component.tsx b/packages/esm-reports-app/src/components/next-report-execution.component.tsx
+index e73b4cf..010cb96 100644
+--- a/packages/esm-reports-app/src/components/next-report-execution.component.tsx
++++ b/packages/esm-reports-app/src/components/next-report-execution.component.tsx
+@@ -3,6 +3,7 @@ import * as cronjsParser from '@datasert/cronjs-parser';
+ import * as cronjsMatcher from '@datasert/cronjs-matcher';
+ import dayjs from 'dayjs';
+ import utc from 'dayjs/plugin/utc';
++import { toUnixDayOfWeekNumbering } from '../utils/openmrs-cron-utils';
+ 
+ dayjs.extend(utc);
+ 
+@@ -17,12 +18,12 @@ const NextReportExecution: React.FC<NextReportExecutionProps> = ({ schedule, cur
+       return '';
+     }
+ 
+-    const expression = cronjsParser.parse(schedule, { hasSeconds: true });
++    const expression = cronjsParser.parse(toUnixDayOfWeekNumbering(schedule), { hasSeconds: true });
+     const nextExecutions = cronjsMatcher.getFutureMatches(expression, {
+       startAt: currentDate.toISOString(),
+       matchCount: 1,
+     });
+-    return nextExecutions.length === 1 ? dayjs.utc(nextExecutions[0].toString()).format('YYYY-MM-DD HH:mm') : '';
++    return nextExecutions.length === 1 ? dayjs.utc(nextExecutions[0].toString()).local().format('YYYY-MM-DD HH:mm') : '';
+   })();
+ 
+   return <span>{nextReportExecutionDate}</span>;
+diff --git a/packages/esm-reports-app/src/components/report-data-viewer.component.tsx b/packages/esm-reports-app/src/components/report-data-viewer.component.tsx
+index 973a744..6696d9b 100644
+--- a/packages/esm-reports-app/src/components/report-data-viewer.component.tsx
++++ b/packages/esm-reports-app/src/components/report-data-viewer.component.tsx
+@@ -81,29 +81,30 @@ const ReportDataViewer: React.FC<ReportDataViewerProps> = ({ reportData }) => {
+ 
+     const selectedColumnsData = columns.filter((col) => selectedColumnNames.includes(col.name));
+ 
++    // Quote a field per RFC 4180 when it holds a comma, a double quote or a line break, doubling inner quotes.
++    const toCsvField = (value: unknown) => {
++      const text = value === null || value === undefined ? '' : String(value);
++      return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
++    };
++
+     // Create CSV header
+-    const header = selectedColumnsData.map((col) => col.label).join(',');
++    const header = selectedColumnsData.map((col) => toCsvField(col.label)).join(',');
+ 
+     // Create CSV rows
+     const csvRows = rows.map((row) => {
+       return selectedColumnsData
+         .map((col) => {
+           const value = row[col.name];
+-          // Handle array values and escape commas
+           if (Array.isArray(value)) {
+             // Handle date arrays
+             if (value.length >= 3 && value.length <= 6) {
+               const [year, month, day, hour = 0, minute = 0, second = 0] = value;
+               const date = new Date(year, month - 1, day, hour, minute, second);
+-              return `"${formatDatetime(date)}"`;
++              return toCsvField(formatDatetime(date));
+             }
+-            return `"${value.join(' ')}"`;
+-          }
+-          // Handle strings with commas
+-          if (typeof value === 'string' && value.includes(',')) {
+-            return `"${value}"`;
++            return toCsvField(value.join(' '));
+           }
+-          return value;
++          return toCsvField(value);
+         })
+         .join(',');
+     });
+diff --git a/packages/esm-reports-app/src/components/report-parameter-input.component.tsx b/packages/esm-reports-app/src/components/report-parameter-input.component.tsx
+index a7e8d4e..a27409a 100644
+--- a/packages/esm-reports-app/src/components/report-parameter-input.component.tsx
++++ b/packages/esm-reports-app/src/components/report-parameter-input.component.tsx
+@@ -1,7 +1,7 @@
+ import React, { useCallback, useEffect, useRef, useState } from 'react';
+ import { isEqual } from 'lodash-es';
+ import { DatePicker, DatePickerInput, Select, SelectItem, TextInput, Search } from '@carbon/react';
+-import { useLocations } from './reports.resource';
++import { useEncounterTypes, useLocations } from './reports.resource';
+ import styles from './run-report/run-report-form.scss';
+ import { useTranslation } from 'react-i18next';
+ import { useDebounce } from '@openmrs/esm-framework';
+@@ -15,9 +15,11 @@ interface ReportParameterInputProps {
+ 
+ function getInitialValue(parameter: any, value: any) {
+   if (parameter.type === 'java.util.Date') {
+-    return new Date(value);
++    return value ? new Date(value) : '';
+   } else if (parameter.type === 'org.openmrs.Location') {
+     return value?.uuid;
++  } else if (parameter.type === 'org.openmrs.EncounterType') {
++    return typeof value === 'string' ? value : value?.uuid;
+   } else {
+     return value;
+   }
+@@ -26,6 +28,7 @@ function getInitialValue(parameter: any, value: any) {
+ const ReportParameterInput: React.FC<ReportParameterInputProps> = ({ parameter, value, onChange }) => {
+   const { t } = useTranslation();
+   const { locations } = useLocations();
++  const { encounterTypes } = useEncounterTypes();
+   const [valueInternal, setValueInternal] = useState<string | number>(getInitialValue(parameter, value));
+   const searchInputRef = useRef(null);
+   const [searchTerm, setSearchTerm] = useState('');
+@@ -115,11 +118,12 @@ const ReportParameterInput: React.FC<ReportParameterInputProps> = ({ parameter,
+             datePickerType="single"
+             onChange={([dateValue]) => handleOnDateChange(dateValue)}
+             className={styles.datePicker}
+-            value={valueInternal}
++            value={valueInternal ? new Date(valueInternal) : ''}
+           >
+-            <DatePickerInput id={parameter.name} labelText={parameter.label} type="date" />
++            <DatePickerInput id={parameter.name} labelText={parameter.label} type="text" placeholder="mm/dd/yyyy" />
+           </DatePicker>
+         );
++      case 'java.util.Locale':
+       case 'java.lang.String':
+       case 'java.lang.Integer':
+         return (
+@@ -150,6 +154,24 @@ const ReportParameterInput: React.FC<ReportParameterInputProps> = ({ parameter,
+             ))}
+           </Select>
+         );
++      case 'org.openmrs.EncounterType':
++        return (
++          <Select
++            id={parameter.name}
++            name={parameter.name}
++            labelText={parameter.label}
++            className={styles.basicInputElement}
++            onChange={(e) => handleOnChange(e)}
++            value={valueInternal}
++          >
++            <SelectItem text="" value={''} />
++            {encounterTypes.map((encounterType) => (
++              <SelectItem key={encounterType.uuid} text={encounterType.display} value={encounterType.uuid}>
++                {encounterType.display}
++              </SelectItem>
++            ))}
++          </Select>
++        );
+       case 'org.openmrs.Concept':
+         return (
+           <div>
+@@ -180,6 +202,11 @@ const ReportParameterInput: React.FC<ReportParameterInputProps> = ({ parameter,
+   };
+ 
+   function handleOnDateChange(dateValue) {
++    if (!dateValue || Number.isNaN(new Date(dateValue).getTime())) {
++      setValueInternal('');
++      onChange('');
++      return;
++    }
+     const newDate = new Date(dateValue);
+     setValueInternal(newDate.toISOString());
+     onChange(newDate.toISOString());
+diff --git a/packages/esm-reports-app/src/components/report-parameter.component.tsx b/packages/esm-reports-app/src/components/report-parameter.component.tsx
+index dfdcb14..3b9db2d 100644
+--- a/packages/esm-reports-app/src/components/report-parameter.component.tsx
++++ b/packages/esm-reports-app/src/components/report-parameter.component.tsx
+@@ -4,10 +4,11 @@ import { TextInput, Select, SelectItem } from '@carbon/react';
+ import { OpenmrsDatePicker } from '@openmrs/esm-framework';
+ import styles from './report-parameter.scss';
+ import ConceptSearchInput from './concept-search/concept-search-input.component';
++import { useEncounterTypes } from './reports.resource';
+ 
+ type DateReportParameter = 'java.util.Date';
+ type InputReportParameter = 'java.lang.String' | 'java.lang.Integer';
+-type SelectReportParameter = 'org.openmrs.Location';
++type SelectReportParameter = 'org.openmrs.Location' | 'org.openmrs.EncounterType';
+ type ReportParameterType = DateReportParameter | InputReportParameter | SelectReportParameter | string;
+ 
+ interface ReportParameterInterface {
+@@ -35,6 +36,29 @@ type ReportParameterProps = ReportParameterPropsBase &
+       }
+   );
+ 
++interface EncounterTypeSelectProps {
++  parameter: ReportParameterInterface;
++  value: string;
++  onChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
++}
++
++const EncounterTypeSelect: React.FC<EncounterTypeSelectProps> = ({ parameter, value, onChange }) => {
++  const { encounterTypes } = useEncounterTypes();
++
++  return (
++    <div>
++      <Select id={parameter.name} name={parameter.name} labelText={parameter.label} onChange={onChange} value={value}>
++        <SelectItem text="" value="" />
++        {encounterTypes.map((encounterType) => (
++          <SelectItem key={encounterType.uuid} text={encounterType.display} value={encounterType.uuid}>
++            {encounterType.display}
++          </SelectItem>
++        ))}
++      </Select>
++    </div>
++  );
++};
++
+ const ReportParameter: React.FC<ReportParameterProps> = ({
+   parameter,
+   reportParameters,
+@@ -72,6 +96,7 @@ const ReportParameter: React.FC<ReportParameterProps> = ({
+           />
+         </div>
+       );
++    case 'java.util.Locale':
+     case 'java.lang.String':
+     case 'java.lang.Integer':
+       return (
+@@ -104,6 +129,14 @@ const ReportParameter: React.FC<ReportParameterProps> = ({
+           </Select>
+         </div>
+       );
++    case 'org.openmrs.EncounterType':
++      return (
++        <EncounterTypeSelect
++          parameter={parameter}
++          value={reportParameters[parameter.name] ?? ''}
++          onChange={handleOnChange}
++        />
++      );
+     case 'org.openmrs.Concept':
+       return (
+         <ConceptSearchInput
+@@ -117,7 +150,7 @@ const ReportParameter: React.FC<ReportParameterProps> = ({
+       return (
+         <div>
+           <span className={styles.unknownParameterTypeSpan}>
+-            {t('unknownParameterType', 'Unknown parameter type: {type} for parameter: {label}', {
++            {t('unknownParameterType', 'Unknown parameter type: {{type}} for parameter: {{label}}', {
+               type: parameter.type,
+               label: parameter.label,
+             })}
+diff --git a/packages/esm-reports-app/src/components/report-schedule-description.component.tsx b/packages/esm-reports-app/src/components/report-schedule-description.component.tsx
+index 9ab9dd9..2e25d65 100644
+--- a/packages/esm-reports-app/src/components/report-schedule-description.component.tsx
++++ b/packages/esm-reports-app/src/components/report-schedule-description.component.tsx
+@@ -12,7 +12,8 @@ const ReportScheduleDescription: React.FC<ReportScheduleProps> = ({ schedule })
+     ? cronstrue.toString(schedule, {
+         locale: session.locale,
+         use24HourTimeFormat: true,
+-        dayOfWeekStartIndexZero: true,
++        // Quartz numbers the days of the week from 1 (Sunday).
++        dayOfWeekStartIndexZero: false,
+       })
+     : '';
+   return <span>{scheduleDescription}</span>;
+diff --git a/packages/esm-reports-app/src/components/reports-data-overview.component.tsx b/packages/esm-reports-app/src/components/reports-data-overview.component.tsx
+index 3c79b00..6e411ab 100644
+--- a/packages/esm-reports-app/src/components/reports-data-overview.component.tsx
++++ b/packages/esm-reports-app/src/components/reports-data-overview.component.tsx
+@@ -74,7 +74,7 @@ const ReportsDataOverviewComponent: React.FC = () => {
+         showSnackbar({
+           kind: 'error',
+           title: getCoreTranslation('error'),
+-          subtitle: t('missingParameters', 'Please provide the following parameters: {parameters}', {
++          subtitle: t('missingParameters', 'Please provide the following parameters: {{parameters}}', {
+             parameters: missingParameters.join(', '),
+           }),
+         });
+diff --git a/packages/esm-reports-app/src/components/reports.resource.tsx b/packages/esm-reports-app/src/components/reports.resource.tsx
+index 100965c..ff4190c 100644
+--- a/packages/esm-reports-app/src/components/reports.resource.tsx
++++ b/packages/esm-reports-app/src/components/reports.resource.tsx
+@@ -1,4 +1,4 @@
+-import { openmrsFetch, openmrsObservableFetch } from '@openmrs/esm-framework';
++import { openmrsFetch, openmrsObservableFetch, restBaseUrl, useOpenmrsFetchAll } from '@openmrs/esm-framework';
+ import type { FetchResponse } from '@openmrs/esm-framework';
+ import { type Observable } from 'rxjs';
+ import useSWR from 'swr';
+@@ -39,6 +39,16 @@ export function useLocations() {
+   };
+ }
+ 
++export function useEncounterTypes() {
++  const { data } = useOpenmrsFetchAll<{ uuid: string; display: string }>(
++    `${restBaseUrl}/encountertype?v=custom:(uuid,display)`,
++  );
++
++  return {
++    encounterTypes: data ?? [],
++  };
++}
++
+ export function useReports(statuses: string, pageNumber: number, pageSize: number, sortBy?: string): any {
+   const reportsUrl =
+     `/ws/rest/v1/reportingrest/reportRequest?status=${statuses}&startIndex=${pageNumber}&limit=${pageSize}&totalCount=true` +
+@@ -47,6 +57,12 @@ export function useReports(statuses: string, pageNumber: number, pageSize: numbe
+   const { data, error, isValidating, mutate } = useSWR<{ data: { results: Array<any>; totalCount: number } }, Error>(
+     reportsUrl,
+     openmrsFetch,
++    {
++      refreshInterval: (current) =>
++        current?.data?.results.some((report) => report.status === 'REQUESTED' || report.status === 'PROCESSING')
++          ? 3000
++          : 0,
++    },
+   );
+ 
+   const reports = data?.data?.results;
+diff --git a/packages/esm-reports-app/src/components/run-report/run-report-form.component.tsx b/packages/esm-reports-app/src/components/run-report/run-report-form.component.tsx
+index fdb470a..cb45c56 100644
+--- a/packages/esm-reports-app/src/components/run-report/run-report-form.component.tsx
++++ b/packages/esm-reports-app/src/components/run-report/run-report-form.component.tsx
+@@ -28,6 +28,7 @@ const RunReportForm: React.FC<RunReportForm> = ({ closePanel }) => {
+   const supportedParameterTypes = useMemo(
+     () => [
+       'java.util.Date',
++      'java.util.Locale',
+       'java.lang.String',
+       'java.lang.Integer',
+       'org.openmrs.Location',
+@@ -111,7 +112,7 @@ const RunReportForm: React.FC<RunReportForm> = ({ closePanel }) => {
+             setTimeout(() => {
+               showSnackbar({
+                 kind: 'success',
+-                title: t('reportRanSuccessfully', 'Report ran successfully'),
++                title: t('reportSubmitted', 'Report submitted'),
+               });
+               closePanel();
+               setIsSubmitting(false);
+diff --git a/packages/esm-reports-app/src/components/simple-cron-editor/commons.ts b/packages/esm-reports-app/src/components/simple-cron-editor/commons.ts
+index 6912847..7ff2890 100644
+--- a/packages/esm-reports-app/src/components/simple-cron-editor/commons.ts
++++ b/packages/esm-reports-app/src/components/simple-cron-editor/commons.ts
+@@ -15,6 +15,7 @@ export const SCHEDULE_TYPE_DEFAULT_LABELS: Record<string, string> = {
+   everyWeek: 'Every week',
+   everyMonth: 'Every month',
+ };
++// Schedules run as Quartz cron expressions, where day-of-week runs from 1 (Sunday) to 7 (Saturday).
+ export const DAYS_OF_WEEK: CronField[] = [
+   'sunday',
+   'monday',
+@@ -25,7 +26,7 @@ export const DAYS_OF_WEEK: CronField[] = [
+   'saturday',
+ ].map((name, idx) => ({
+   name,
+-  value: idx,
++  value: idx + 1,
+ }));
+ export const DAYS_OF_WEEK_DEFAULT_LABELS: Record<string, string> = {
+   sunday: 'Sunday',
+diff --git a/packages/esm-reports-app/src/components/simple-cron-editor/simple-cron-editor.component.tsx b/packages/esm-reports-app/src/components/simple-cron-editor/simple-cron-editor.component.tsx
+index 1eb8402..389bed6 100644
+--- a/packages/esm-reports-app/src/components/simple-cron-editor/simple-cron-editor.component.tsx
++++ b/packages/esm-reports-app/src/components/simple-cron-editor/simple-cron-editor.component.tsx
+@@ -92,7 +92,7 @@ function getEditorState(initialCron: string): EditorState {
+       selectedDaysOfWeek: openMRSCron.dayOfWeek
+         .split(',')
+         .map((dayId) => parseInt(dayId))
+-        .map((dayId) => DAYS_OF_WEEK[dayId]),
++        .map((dayId) => DAYS_OF_WEEK.find((dayOfWeek) => dayOfWeek.value === dayId)),
+       time: { hours: parseInt(openMRSCron.hours), minutes: parseInt(openMRSCron.minutes) },
+       cron: null,
+     };
+diff --git a/packages/esm-reports-app/src/utils/openmrs-cron-utils.test.ts b/packages/esm-reports-app/src/utils/openmrs-cron-utils.test.ts
+new file mode 100644
+index 0000000..3d96ddd
+--- /dev/null
++++ b/packages/esm-reports-app/src/utils/openmrs-cron-utils.test.ts
+@@ -0,0 +1,18 @@
++import { describe, expect, it } from 'vitest';
++import { toUnixDayOfWeekNumbering } from './openmrs-cron-utils';
++
++describe('toUnixDayOfWeekNumbering', () => {
++  it('shifts Quartz day-of-week numbers (Sunday = 1) to Unix numbers (Sunday = 0)', () => {
++    expect(toUnixDayOfWeekNumbering('0 30 7 ? * 2,5')).toBe('0 30 7 ? * 1,4');
++    expect(toUnixDayOfWeekNumbering('0 0 6 ? * 2-6')).toBe('0 0 6 ? * 1-5');
++    expect(toUnixDayOfWeekNumbering('0 0 6 ? * 1')).toBe('0 0 6 ? * 0');
++  });
++
++  it('leaves steps, nth occurrences, names and other fields alone', () => {
++    expect(toUnixDayOfWeekNumbering('0 0 6 ? * 6#3')).toBe('0 0 6 ? * 5#3');
++    expect(toUnixDayOfWeekNumbering('0 0 6 ? * 1/2')).toBe('0 0 6 ? * 0/2');
++    expect(toUnixDayOfWeekNumbering('0 0 6 ? * MON')).toBe('0 0 6 ? * MON');
++    expect(toUnixDayOfWeekNumbering('0 0 6 * * ?')).toBe('0 0 6 * * ?');
++    expect(toUnixDayOfWeekNumbering('0 30 8 16 3 ? 2026')).toBe('0 30 8 16 3 ? 2026');
++  });
++});
+diff --git a/packages/esm-reports-app/src/utils/openmrs-cron-utils.ts b/packages/esm-reports-app/src/utils/openmrs-cron-utils.ts
+index 361e559..b6cdf03 100644
+--- a/packages/esm-reports-app/src/utils/openmrs-cron-utils.ts
++++ b/packages/esm-reports-app/src/utils/openmrs-cron-utils.ts
+@@ -24,3 +24,21 @@ export function parseOpenMRSCron(expression: string): OpenMRSCron {
+     year: tokens[6],
+   };
+ }
++
++/**
++ * Quartz numbers the days of the week from 1 (Sunday) to 7 (Saturday), while cronjs-parser
++ * uses the Unix numbering from 0 (Sunday). Shift the day-of-week numbers so that the next
++ * execution is calculated for the same days the server runs the report on.
++ * Step values (`/n`) and nth-occurrence values (`#n`) are not day numbers and are left alone.
++ */
++export function toUnixDayOfWeekNumbering(expression: string): string {
++  const tokens = expression.trim().split(/\s+/);
++  if (tokens.length < 6) {
++    return expression;
++  }
++  tokens[5] = tokens[5].replace(
++    /(^|[^/#\d])(\d+)/g,
++    (_, prefix: string, day: string) => `${prefix}${Number(day) - 1}`,
++  );
++  return tokens.join(' ');
++}
+diff --git a/packages/esm-reports-app/translations/am.json b/packages/esm-reports-app/translations/am.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/am.json
++++ b/packages/esm-reports-app/translations/am.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/ar.json b/packages/esm-reports-app/translations/ar.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/ar.json
++++ b/packages/esm-reports-app/translations/ar.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/ar_SY.json b/packages/esm-reports-app/translations/ar_SY.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/ar_SY.json
++++ b/packages/esm-reports-app/translations/ar_SY.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/bn.json b/packages/esm-reports-app/translations/bn.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/bn.json
++++ b/packages/esm-reports-app/translations/bn.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/cs.json b/packages/esm-reports-app/translations/cs.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/cs.json
++++ b/packages/esm-reports-app/translations/cs.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/de.json b/packages/esm-reports-app/translations/de.json
+index 4348c02..1727a8d 100644
+--- a/packages/esm-reports-app/translations/de.json
++++ b/packages/esm-reports-app/translations/de.json
+@@ -31,7 +31,7 @@
+   "failed": "fehlgeschlagen",
+   "fetchReport": "Bericht abrufen",
+   "invalidWebPreviewUrl": "Die konfigurierte URL für die Webvorschau ist ungültig.",
+-  "missingParameters": "Bitte geben Sie die folgenden Parameter an: {parameters}",
++  "missingParameters": "Bitte geben Sie die folgenden Parameter an: {{parameters}}",
+   "missingPlaceholder": "Die konfigurierte URL für die Webvorschau muss den Platzhalter {reportRequestUuid} enthalten.",
+   "nextPage": "Nächste Seite",
+   "nextRun": "Nächster Lauf",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Bitte wählen Sie zunächst einen Bericht aus",
+   "selectReportLabel": "Bericht",
+   "status": "Status",
+-  "unknownParameterType": "Unbekannter Parametertyp: {type} für den Parameter: {label}",
++  "unknownParameterType": "Unbekannter Parametertyp: {{type}} für den Parameter: {{label}}",
+   "view": "Ansicht",
+   "viewReports": "Berichte – Webansicht",
+-  "yes": "Ja"
++  "yes": "Ja",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/en.json b/packages/esm-reports-app/translations/en.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/en.json
++++ b/packages/esm-reports-app/translations/en.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/en_US.json b/packages/esm-reports-app/translations/en_US.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/en_US.json
++++ b/packages/esm-reports-app/translations/en_US.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/es.json b/packages/esm-reports-app/translations/es.json
+index 60549c6..b7bfe15 100644
+--- a/packages/esm-reports-app/translations/es.json
++++ b/packages/esm-reports-app/translations/es.json
+@@ -31,7 +31,7 @@
+   "failed": "Fallido",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Por favor, proporcione los siguientes parámetros: {parameters}",
++  "missingParameters": "Por favor, proporcione los siguientes parámetros: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Siguiente página",
+   "nextRun": "Siguiente ejecución",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Estado",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Sí"
++  "yes": "Sí",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/es_MX.json b/packages/esm-reports-app/translations/es_MX.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/es_MX.json
++++ b/packages/esm-reports-app/translations/es_MX.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/fr.json b/packages/esm-reports-app/translations/fr.json
+index 194a536..c8799a1 100644
+--- a/packages/esm-reports-app/translations/fr.json
++++ b/packages/esm-reports-app/translations/fr.json
+@@ -31,7 +31,7 @@
+   "failed": "Échoué",
+   "fetchReport": "Récupérer le rapport",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Veuillez fournir les paramètres suivants : {parameters}",
++  "missingParameters": "Veuillez fournir les paramètres suivants : {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Page suivante",
+   "nextRun": "Prochaine execution",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Veuillez d'abord sélectionner un rapport",
+   "selectReportLabel": "Rapport",
+   "status": "Statut",
+-  "unknownParameterType": "Type de paramètre inconnu : {type} pour le paramètre : {label}",
++  "unknownParameterType": "Type de paramètre inconnu : {{type}} pour le paramètre : {{label}}",
+   "view": "View",
+   "viewReports": "Aperçu web des rapports",
+-  "yes": "Oui"
++  "yes": "Oui",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/he.json b/packages/esm-reports-app/translations/he.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/he.json
++++ b/packages/esm-reports-app/translations/he.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/hi.json b/packages/esm-reports-app/translations/hi.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/hi.json
++++ b/packages/esm-reports-app/translations/hi.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/hi_IN.json b/packages/esm-reports-app/translations/hi_IN.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/hi_IN.json
++++ b/packages/esm-reports-app/translations/hi_IN.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/id.json b/packages/esm-reports-app/translations/id.json
+index a71fdba..9406004 100644
+--- a/packages/esm-reports-app/translations/id.json
++++ b/packages/esm-reports-app/translations/id.json
+@@ -31,7 +31,7 @@
+   "failed": "Gagal",
+   "fetchReport": "Ambil Laporan",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Harap berikan parameter berikut: {parameters}",
++  "missingParameters": "Harap berikan parameter berikut: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Halaman berikutnya",
+   "nextRun": "Jalankan berikutnya",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Harap pilih laporan terlebih dahulu",
+   "selectReportLabel": "Laporan",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Tampilan Web Laporan",
+-  "yes": "Ya"
++  "yes": "Ya",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/it.json b/packages/esm-reports-app/translations/it.json
+index 5e57b3a..76f07cc 100644
+--- a/packages/esm-reports-app/translations/it.json
++++ b/packages/esm-reports-app/translations/it.json
+@@ -31,7 +31,7 @@
+   "failed": "Fallito",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Pagina successiva",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/ka.json b/packages/esm-reports-app/translations/ka.json
+index c028423..c0cbba7 100644
+--- a/packages/esm-reports-app/translations/ka.json
++++ b/packages/esm-reports-app/translations/ka.json
+@@ -31,7 +31,7 @@
+   "failed": "ჩავარდა",
+   "fetchReport": "ანგარიშის გამოთხოვა",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "შემდეგი გვერდი",
+   "nextRun": "შემდეგი გაშვება",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "ანგარიში",
+   "status": "სტატუსი",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "ანგარიშების ვებხედი",
+-  "yes": "დიახ"
++  "yes": "დიახ",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/km.json b/packages/esm-reports-app/translations/km.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/km.json
++++ b/packages/esm-reports-app/translations/km.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/ku.json b/packages/esm-reports-app/translations/ku.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/ku.json
++++ b/packages/esm-reports-app/translations/ku.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/ky.json b/packages/esm-reports-app/translations/ky.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/ky.json
++++ b/packages/esm-reports-app/translations/ky.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/lg.json b/packages/esm-reports-app/translations/lg.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/lg.json
++++ b/packages/esm-reports-app/translations/lg.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/ne.json b/packages/esm-reports-app/translations/ne.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/ne.json
++++ b/packages/esm-reports-app/translations/ne.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/pl.json b/packages/esm-reports-app/translations/pl.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/pl.json
++++ b/packages/esm-reports-app/translations/pl.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/pt.json b/packages/esm-reports-app/translations/pt.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/pt.json
++++ b/packages/esm-reports-app/translations/pt.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/pt_BR.json b/packages/esm-reports-app/translations/pt_BR.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/pt_BR.json
++++ b/packages/esm-reports-app/translations/pt_BR.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/qu.json b/packages/esm-reports-app/translations/qu.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/qu.json
++++ b/packages/esm-reports-app/translations/qu.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/ro_RO.json b/packages/esm-reports-app/translations/ro_RO.json
+index cbba38a..ce921ce 100644
+--- a/packages/esm-reports-app/translations/ro_RO.json
++++ b/packages/esm-reports-app/translations/ro_RO.json
+@@ -31,7 +31,7 @@
+   "failed": "Eșuat",
+   "fetchReport": "Preia raportul",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Te rugăm să furnizezi următorii parametri: {parameters}",
++  "missingParameters": "Te rugăm să furnizezi următorii parametri: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Pagina următoare",
+   "nextRun": "Următoarea rulare",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Te rugăm să selectezi mai întâi un raport",
+   "selectReportLabel": "Raport",
+   "status": "Stare",
+-  "unknownParameterType": "Tip necunoscut pentru parametrul: {type} - {label}",
++  "unknownParameterType": "Tip necunoscut pentru parametrul: {{type}} - {{label}}",
+   "view": "View",
+   "viewReports": "Vizualizare rapoarte",
+-  "yes": "Da"
++  "yes": "Da",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/ru_RU.json b/packages/esm-reports-app/translations/ru_RU.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/ru_RU.json
++++ b/packages/esm-reports-app/translations/ru_RU.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/si.json b/packages/esm-reports-app/translations/si.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/si.json
++++ b/packages/esm-reports-app/translations/si.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/sq.json b/packages/esm-reports-app/translations/sq.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/sq.json
++++ b/packages/esm-reports-app/translations/sq.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/sw.json b/packages/esm-reports-app/translations/sw.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/sw.json
++++ b/packages/esm-reports-app/translations/sw.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/sw_KE.json b/packages/esm-reports-app/translations/sw_KE.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/sw_KE.json
++++ b/packages/esm-reports-app/translations/sw_KE.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/tr.json b/packages/esm-reports-app/translations/tr.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/tr.json
++++ b/packages/esm-reports-app/translations/tr.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/tr_TR.json b/packages/esm-reports-app/translations/tr_TR.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/tr_TR.json
++++ b/packages/esm-reports-app/translations/tr_TR.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/uk.json b/packages/esm-reports-app/translations/uk.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/uk.json
++++ b/packages/esm-reports-app/translations/uk.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/uz.json b/packages/esm-reports-app/translations/uz.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/uz.json
++++ b/packages/esm-reports-app/translations/uz.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/uz@Latn.json b/packages/esm-reports-app/translations/uz@Latn.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/uz@Latn.json
++++ b/packages/esm-reports-app/translations/uz@Latn.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/uz_UZ.json b/packages/esm-reports-app/translations/uz_UZ.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/uz_UZ.json
++++ b/packages/esm-reports-app/translations/uz_UZ.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/vi.json b/packages/esm-reports-app/translations/vi.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/vi.json
++++ b/packages/esm-reports-app/translations/vi.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/zh.json b/packages/esm-reports-app/translations/zh.json
+index 830d25d..4181695 100644
+--- a/packages/esm-reports-app/translations/zh.json
++++ b/packages/esm-reports-app/translations/zh.json
+@@ -88,5 +88,6 @@
+   "unknownParameterType": "未知参数类型",
+   "view": "查看",
+   "viewReports": "查看报告",
+-  "yes": "是"
++  "yes": "是",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/zh_CN.json b/packages/esm-reports-app/translations/zh_CN.json
+index 830d25d..4181695 100644
+--- a/packages/esm-reports-app/translations/zh_CN.json
++++ b/packages/esm-reports-app/translations/zh_CN.json
+@@ -88,5 +88,6 @@
+   "unknownParameterType": "未知参数类型",
+   "view": "查看",
+   "viewReports": "查看报告",
+-  "yes": "是"
++  "yes": "是",
++  "reportSubmitted": "Report submitted"
+ }
+diff --git a/packages/esm-reports-app/translations/zh_TW.json b/packages/esm-reports-app/translations/zh_TW.json
+index 19b431c..94f7f3c 100644
+--- a/packages/esm-reports-app/translations/zh_TW.json
++++ b/packages/esm-reports-app/translations/zh_TW.json
+@@ -31,7 +31,7 @@
+   "failed": "Failed",
+   "fetchReport": "Fetch Report",
+   "invalidWebPreviewUrl": "Configured web preview URL is invalid.",
+-  "missingParameters": "Please provide the following parameters: {parameters}",
++  "missingParameters": "Please provide the following parameters: {{parameters}}",
+   "missingPlaceholder": "Configured web preview URL must include {reportRequestUuid} placeholder.",
+   "nextPage": "Next page",
+   "nextRun": "Next run",
+@@ -85,8 +85,9 @@
+   "selectReportFirst": "Please select a report first",
+   "selectReportLabel": "Report",
+   "status": "Status",
+-  "unknownParameterType": "Unknown parameter type: {type} for parameter: {label}",
++  "unknownParameterType": "Unknown parameter type: {{type}} for parameter: {{label}}",
+   "view": "View",
+   "viewReports": "Reports Webview",
+-  "yes": "Yes"
++  "yes": "Yes",
++  "reportSubmitted": "Report submitted"
+ }

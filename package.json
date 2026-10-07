@@ -1,0 +1,10 @@
+{
+  "name": "openmrs-qa-reference-tests",
+  "private": true,
+  "scripts": {
+    "test:headless": "node tests/headless-reference.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}
