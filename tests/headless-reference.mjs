@@ -16,7 +16,7 @@ const route=origin+'/openmrs/module/reporting/definition/editAnnotatedDefinition
 await check('Converter edit survives hard reload',async()=>{await page.goto(route);await expect(page.locator('#definitionToConvert-select')).toHaveValue(fixtures.source);await page.getByLabel('unspecifiedValue',{exact:true}).fill('Headless verified fallback');await page.locator('#save-button').click();await page.waitForURL('**/manageDefinitions.form?**');await page.goto(route);await page.reload();await expect(page.getByLabel('unspecifiedValue',{exact:true})).toHaveValue('Headless verified fallback');await page.screenshot({path:path.join(evidence,'converter-populated.png'),fullPage:true});});
 await check('Malformed converter map is rejected without saving',async()=>{const input=page.getByLabel('conversions (JSON)',{exact:true});await input.fill('{bad');await page.locator('#save-button').click();await expect(page.locator('#converters-error')).toContainText('Enter valid JSON');expect(await input.evaluate(e=>e.validity.valid)).toBe(false);await page.screenshot({path:path.join(evidence,'converter-invalid.png'),fullPage:true});await input.fill('{"F":"Female","M":"Male"}');});
 await check('Converter preview produces database-backed values',async()=>{await page.locator('#previewButton').click();const frame=page.frameLocator('iframe').last();await expect(frame.getByText('Evaluation Result',{exact:true})).toBeVisible();await expect(frame.locator('body')).toContainText('Female');await page.screenshot({path:path.join(evidence,'converter-preview.png'),fullPage:true});});
-await check('Row-per-patient columns save and reload',async()=>{
+await check(process.env.VERIFY_DATASET_PREVIEW==='1'?'Row-per-patient columns persist and preview exactly 50 patients':'Row-per-patient columns save and reload',async()=>{
  await page.goto(origin+'/openmrs/module/reporting/datasets/logicDataSetEditor.form?uuid='+owned.dataset);
  await page.locator('input[name=columnLabel]').first().fill('Headless gender');
  await page.locator('input[type=submit][value=Save]').click();await page.waitForLoadState('domcontentloaded');await page.reload();
@@ -26,6 +26,8 @@ await check('Row-per-patient columns save and reload',async()=>{
   await page.locator('#previewButton').click();const frame=page.frameLocator('iframe').last();
   await expect(frame.locator('body')).toContainText('Headless gender',{timeout:60000});
   await expect(frame.locator('body')).toContainText('preview cohort of 50 patients');
+  await expect(frame.locator('table[border="1"] > tbody > tr')).toHaveCount(50);
+  await page.screenshot({path:path.join(evidence,'row-patient-preview-50.png'),fullPage:true});
  } else {
   results.push({name:'Row-per-patient dataset preview',status:'blocked',reason:'Unbounded preview confirmed; source fix compiles but image rebuild is paused by user'});
  }
@@ -57,4 +59,5 @@ await check('Schedule once persists after reload',async()=>{
  await expect(page.locator('body')).toContainText('Scheduled');await page.screenshot({path:path.join(evidence,'report-scheduled.png'),fullPage:true});
 });
 await check('SPA Reports dashboard loads',async()=>{await page.goto(origin+'/openmrs/spa/reports');await expect(page.getByText('Reports',{exact:true}).first()).toBeVisible({timeout:60000});await page.screenshot({path:path.join(evidence,'reports-dashboard.png'),fullPage:true});});
+await check('Browser wall clock stays frozen',async()=>{await expect.poll(()=>page.evaluate(()=>new Date().toISOString())).toBe('2026-09-29T09:00:00.000Z');});
 }catch(error){console.error(error.stack);process.exitCode=1;}finally{await fs.writeFile(path.join(evidence,'results.json'),JSON.stringify({headless:true,origin,results,pageErrors:errors,consoleErrors,failedRequests},null,2));await browser.close();}

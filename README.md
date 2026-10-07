@@ -2,11 +2,25 @@
 
 Editable source patches and release tooling for the **real OpenMRS reference at http://localhost:8090/openmrs/spa**. The clone lives in a separate repository and is not built here. This is a private QA system with de-identified demonstration data, not a clinical deployment.
 
-## Current status
+## Native development (current local mode)
+
+The application now runs directly from a dedicated repository worktree: native Java21/Tomcat and nginx, with the owned Java patches and Reports frontend compiled locally. Only MariaDB remains in Docker to preserve the large existing database. No application image is needed after the one-time extraction. See [native setup, commands and limitations](docs/NATIVE.md). The older published-image instructions below remain available for explicitly requested image deployments.
+
+```sh
+python3 dev/runtime.py start
+python3 dev/runtime.py status
+python3 dev/runtime.py stop
+dev/rebuild-backend.sh
+dev/rebuild-frontend.sh
+```
+
+These commands create no Docker images and push nothing. Do not run `start` if the native services are already running.
+
+## Published image status
 
 - Last published, portable release: `2026-10-07-legacy-qa`. Its four multiarchitecture image digests are in `releases/2026-10-07-legacy-qa.json`.
 - Reports fixes were compiled and tested in local containers before image work was paused. **No Reports release was published.** Do not attempt to pull `2026-10-07-reports-flows` from the public registry.
-- The newest source fix bounds Logic/Patient dataset previews to 50 patients and uses a monotonic evaluation timer. It compiles but **is not deployed**. It deliberately does not impose a patient cohort on scalar SQL datasets: stock Reporting returns an empty result when filtered SQL has no `patient_id` column.
+- The newest source fix bounds Logic/Patient dataset previews to 50 patients and uses a monotonic evaluation timer. It is now compiled and verified in the **native local runtime**, but is not in a published image. It deliberately does not impose a patient cohort on scalar SQL datasets: stock Reporting returns an empty result when filtered SQL has no `patient_id` column.
 - Image builds, publication and deployment happen only when explicitly requested. A Git push does not trigger them. The workflow has only `workflow_dispatch` and defaults to validation without publication.
 
 ## QA: update to an already-published release

@@ -6,9 +6,9 @@ import re
 import subprocess
 from pathlib import Path
 root = Path(__file__).resolve().parents[1]
-for path in list((root / 'scripts').glob('*.py')) + list((root / 'tests').glob('*.py')):
+for path in list((root / 'scripts').glob('*.py')) + list((root / 'tests').glob('*.py')) + list((root / 'dev').glob('*.py')):
     ast.parse(path.read_text(), filename=str(path))
-for path in (root / 'scripts').glob('*.sh'):
+for path in list((root / 'scripts').glob('*.sh')) + list((root / 'dev').glob('*.sh')):
     subprocess.run(['bash', '-n', str(path)], check=True)
 lock = json.loads((root / 'versions.lock.json').read_text())
 for image in lock['images'].values():
@@ -20,9 +20,9 @@ assert re.search(r'^on:\n  workflow_dispatch:', workflow, re.M)
 assert not re.search(r'^\s*(push|pull_request|schedule|repository_dispatch|workflow_run):', workflow, re.M)
 assert 'if: inputs.publish' in workflow and 'default: false' in workflow
 prohibited = {'.db', '.sqlite', '.jar', '.omod', '.class', '.zip', '.tar', '.gz'}
-for folder in ['source', 'patches', 'docker', 'scripts', 'docs', 'tests', 'licenses']:
+for folder in ['source', 'patches', 'docker', 'scripts', 'docs', 'tests', 'licenses', 'dev']:
     for path in (root / folder).rglob('*'):
-        if path.is_file():
+        if path.is_file() and '__pycache__' not in path.parts:
             assert path.suffix not in prohibited, path
             assert 'node_modules' not in path.parts, path
             data = path.read_bytes()

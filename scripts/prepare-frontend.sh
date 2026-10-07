@@ -22,6 +22,19 @@ git -C "$source_dir" apply "$root/patches/esm-admin-tools-v4.4.0.patch"
 mkdir -p "$root/.build/frontend"
 cp "$root/docker/frontend/"* "$root/.build/frontend/"
 node_image=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["images"]["node"])' "$root/versions.lock.json")
+if [ "${1:-}" = '--native' ]; then
+  (
+    cd "$source_dir"
+    export NODE_OPTIONS=--max-old-space-size=6144
+    yarn_file=$(find .yarn/releases -name 'yarn-*.cjs' -maxdepth 1 | head -1)
+    node "$yarn_file" install --immutable
+    cd packages/esm-reports-app
+    node ../../node_modules/typescript/bin/tsc --noEmit
+    node ../../node_modules/@rspack/cli/bin/rspack.js --mode production
+    mkdir -p "$root/.build/frontend/reports-dist"
+    cp -R dist/. "$root/.build/frontend/reports-dist/"
+  )
+else
 docker run --rm -v "$source_dir:/src" -v "$root/.build/frontend:/out" -w /src -e COREPACK_ENABLE_DOWNLOAD_PROMPT=0 -e NODE_OPTIONS=--max-old-space-size=6144 "$node_image" bash -euc '
 corepack enable
 yarn install --immutable
@@ -31,6 +44,7 @@ node ../../node_modules/@rspack/cli/bin/rspack.js --mode production
 mkdir -p /out/reports-dist
 cp -R dist/. /out/reports-dist/
 '
+fi
 python3 - "$root/.build/frontend" <<'PY'
 import hashlib,pathlib,re,sys
 root=pathlib.Path(sys.argv[1]);digest=hashlib.sha256((root/'reports-dist/openmrs-esm-reports-app.js').read_bytes()).hexdigest()[:12]

@@ -5,6 +5,7 @@ import json
 import shutil
 import subprocess
 import sys
+import os
 import zipfile
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
@@ -48,7 +49,10 @@ def main():
         link = BUILD / source.name
         if not link.exists():
             link.symlink_to(source, target_is_directory=True)
+    native = '--native' in sys.argv
     if not (BUILD / "deps/jsp-api.jar").exists():
+        if native:
+            raise RuntimeError('Native dependencies missing: run dev/export-runtime.py before removing baseline images')
         extract_dependencies()
     cp = '/work/deps/*:' + ':'.join('/work/backend-inputs/' + p.name for p in sorted((BUILD / 'backend-inputs').glob('*.omod')))
     groups = [('backend-src', 'backend-classes'), ('controller-src', 'controller-classes'),
@@ -61,11 +65,20 @@ def main():
         if not paths:
             raise RuntimeError('No Java sources in ' + folder)
         argfile = BUILD / (folder + '.txt')
-        argfile.write_text('\n'.join('/repo/' + p.relative_to(ROOT).as_posix() for p in paths) + '\n')
+        argfile.write_text('\n'.join(str(p) if native else '/repo/' + p.relative_to(ROOT).as_posix() for p in paths) + '\n')
         (BUILD / output).mkdir(exist_ok=True)
-        run('docker', 'run', '--rm', '--mount', 'type=tmpfs,destination=/openmrs/data', '--entrypoint', 'javac',
-            '-v', str(ROOT) + ':/repo:ro', '-v', str(BUILD) + ':/work', LOCK['images']['backend'],
-            '-proc:none', '--release', '21' if folder == 'cohort-src' else '8', '-cp', cp, '-d', '/work/' + output, '@/work/' + argfile.name)
+        if native:
+            java_home = os.environ.get('JAVA_HOME')
+            if not java_home:
+                java_home = subprocess.check_output(['brew', '--prefix', 'openjdk@21'], text=True).strip()
+            native_cp = cp.replace('/work/', str(BUILD) + '/')
+            run(str(Path(java_home) / 'bin/javac'), '-proc:none', '--release',
+                '21' if folder == 'cohort-src' else '8', '-cp', native_cp,
+                '-d', str(BUILD / output), '@' + str(argfile))
+        else:
+            run('docker', 'run', '--rm', '--mount', 'type=tmpfs,destination=/openmrs/data', '--entrypoint', 'javac',
+                '-v', str(ROOT) + ':/repo:ro', '-v', str(BUILD) + ':/work', LOCK['images']['backend'],
+                '-proc:none', '--release', '21' if folder == 'cohort-src' else '8', '-cp', cp, '-d', '/work/' + output, '@/work/' + argfile.name)
     for name in ['assemble-backend.py', 'package-logic.py']:
         shutil.copy2(ROOT / 'scripts' / name, BUILD / name)
         run(sys.executable, str(BUILD / name))

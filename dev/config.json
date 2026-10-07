@@ -1,0 +1,9 @@
+{
+  "port": 8090,
+  "tomcat_port": 8092,
+  "frontend_port": 8094,
+  "database_host": "127.0.0.1",
+  "database_port": 3307,
+  "clock": "2026-09-29 09:00:00",
+  "heap": "-Xms1g -Xmx8g -XX:+ExitOnOutOfMemoryError"
+}
