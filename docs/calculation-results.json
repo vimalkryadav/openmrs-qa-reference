@@ -173,6 +173,46 @@
       "expected": "The actual local location name appears instead of a UUID or identity hash.",
       "reference": "passed",
       "clone": "passed"
+    },
+    {
+      "id": "CALC-A01",
+      "name": "Automatic Registration preview and Cancel do not write",
+      "action": "Open Automatic Registration, inspect defaults, then Cancel.",
+      "expected": "The three live suggestions appear; Cancel preserves every registration field.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-A02",
+      "name": "Use existing skips all three seeded suggestions without changes",
+      "action": "Select Reporting Data Items with Use existing and submit.",
+      "expected": "All three suggested seed registrations are skipped; every row is unchanged.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-A03",
+      "name": "Apply creates a missing suggested registration and preserves other rows",
+      "action": "With an exact four-row recovery snapshot, remove age through the UI and apply suggestions.",
+      "expected": "One missing age registration is created with a new identity and correct provider target; the other rows remain unchanged after reload.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-A04",
+      "name": "Overwrite replaces a changed provider target while preserving registration identity",
+      "action": "Temporarily change gender to a different valid provider target, then apply Overwrite.",
+      "expected": "The suggested gender target replaces the changed target while preserving its original UUID; three replacements are reported.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-A05",
+      "name": "All four original rows and definition hashes restored; no external/page errors",
+      "action": "Delete the newly created age row through the UI, restore the exact snapshot, and reload.",
+      "expected": "All original registration columns/identities and all saved-definition hashes match; no external browser attempts or page errors occur.",
+      "reference": "passed",
+      "clone": "passed"
     }
   ],
   "externalRequests": {
@@ -215,5 +255,39 @@
       }
     ],
     "templateSha256": "c504e24221cd7248d4ffee019513aae9f1330018e5aad8ae4c23260828b4dd03"
+  },
+  "automaticRegistrationProof": {
+    "execution": "Actual live browser UI on both applications, not an isolated service double",
+    "commands": [
+      "node tests/headless-calculation-auto.mjs reference",
+      "node tests/headless-calculation-auto.mjs clone"
+    ],
+    "restoration": {
+      "reference": {
+        "allFourRegistrationRowsExact": true,
+        "allDefinitionHashesUnchanged": true,
+        "definitionCount": 6,
+        "clinicalTablesWritten": false
+      },
+      "clone": {
+        "allFourRegistrationRowsExact": true,
+        "allDefinitionHashesUnchanged": true,
+        "definitionCount": 6,
+        "clinicalTablesWritten": false
+      }
+    },
+    "externalBrowserRequests": {
+      "reference": [],
+      "clone": []
+    },
+    "pageErrors": {
+      "reference": [],
+      "clone": []
+    },
+    "limits": [
+      "The four seed registration rows are temporarily changed only during the isolated mutation window, then every stored column is restored from the per-row snapshot.",
+      "Database auto-increment counters are not rewound; all original integer keys and UUIDs are restored.",
+      "No clinical or saved-definition mutation is performed."
+    ]
   }
 }

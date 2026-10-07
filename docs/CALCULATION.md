@@ -44,3 +44,17 @@ A final native Boolean supplement verifies checked state after reload, invalid-m
 Browser interception proves local-only browser traffic; Calculation evaluation uses local
 DB/service providers and does not introduce a remote client. OCL/OWA backend sentinels
 are covered in the separate offline-app ledger.
+
+## Automatic Registration supplement
+
+Five additional paired groups use the actual live browser UI, bringing the catalogue to 26 groups per application. They verify preview/Cancel, Use existing, creation of a missing suggestion, and meaningful Overwrite after changing an existing target. No isolated provider or mocked save path is used.
+
+| Flow | Action | Expected result | Real | Clone |
+| --- | --- | --- | --- | --- |
+| CALC-A01 | Open Automatic Registration, inspect defaults, then Cancel. | The three live suggestions appear; Cancel preserves every registration field. | passed | passed |
+| CALC-A02 | Select Reporting Data Items with Use existing and submit. | All three suggested seed registrations are skipped; every row is unchanged. | passed | passed |
+| CALC-A03 | With an exact four-row recovery snapshot, remove age through the UI and apply suggestions. | One missing age registration is created with a new identity and correct provider target; the other rows remain unchanged after reload. | passed | passed |
+| CALC-A04 | Temporarily change gender to a different valid provider target, then apply Overwrite. | The suggested gender target replaces the changed target while preserving its original UUID; three replacements are reported. | passed | passed |
+| CALC-A05 | Delete the newly created age row through the UI, restore the exact snapshot, and reload. | All original registration columns/identities and all saved-definition hashes match; no external browser attempts or page errors occur. | passed | passed |
+
+Run `node tests/headless-calculation-auto.mjs reference` and the same command with `clone` only when no other registration proof is active. The helper requires exactly the four baseline tokens, snapshots all stored columns and the six definition hashes, and refuses to overwrite an earlier recovery snapshot. The UI temporarily removes/recreates `age` and changes then overwrites `gender`; cleanup deletes the newly created registration through the service (clearing its cache) before a guarded transaction restores the original rows. Both applications ended with every original column, integer key and UUID restored and all definition hashes unchanged. Auto-increment counters are not rewound. Clinical tables are never written. The ignored `test-results/calculation-auto/<target>/` directory contains recovery, creation, overwrite, accessibility and result ledgers.
