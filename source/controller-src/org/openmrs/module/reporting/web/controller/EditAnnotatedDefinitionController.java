@@ -39,12 +39,30 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 public class EditAnnotatedDefinitionController {
 	
+    private static org.springframework.web.servlet.ModelAndViewDefiningException unsupportedType() {
+        return new org.springframework.web.servlet.ModelAndViewDefiningException(
+                new org.springframework.web.servlet.ModelAndView(new org.springframework.web.servlet.View() {
+                    public String getContentType() { return "text/plain"; }
+                    public void render(Map<String, ?> model, HttpServletRequest request, HttpServletResponse response)
+                            throws java.io.IOException {
+                        response.sendError(400, "Unsupported reporting definition type");
+                    }
+                }));
+    }
+
 	protected static Log log = LogFactory.getLog(EditAnnotatedDefinitionController.class);
 	
     @ModelAttribute("definition")
     public Definition getDefinition(@RequestParam(required = false, value = "uuid") String uuid,
-    								@RequestParam(required = false, value = "type") Class<? extends Definition> type) {
-    	Definition d = null;
+                                    @RequestParam(required = false, value = "type") String typeName) throws org.springframework.web.servlet.ModelAndViewDefiningException {
+        Class<? extends Definition> type;
+        try { type = org.openmrs.api.context.Context.loadClass(typeName).asSubclass(Definition.class); }
+        catch (Exception error) { throw unsupportedType(); }
+        if (type == null || !Definition.class.isAssignableFrom(type) || type.isInterface()
+                || java.lang.reflect.Modifier.isAbstract(type.getModifiers())) {
+            throw unsupportedType();
+        }
+        Definition d = null;
     	if (ObjectUtil.notNull(uuid)) {
     		d = DefinitionContext.getDefinitionByUuid(type, uuid);
     	}
@@ -53,7 +71,7 @@ public class EditAnnotatedDefinitionController {
     			d = type.newInstance();
     		}
     		catch (Exception e) {
-    			throw new IllegalArgumentException("Unable to create definition instance of type " + type);
+                throw unsupportedType();
     		}
     	}
         if (d instanceof org.openmrs.module.reporting.cohort.definition.StaticCohortDefinition) {

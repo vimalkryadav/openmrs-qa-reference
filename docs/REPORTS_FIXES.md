@@ -80,3 +80,33 @@ python3 tests/decode-object-extras.py
 The paired renderer evidence for commit `434c0a8` is now final: both apps passed9/9 cases in `openmrs-native-data/reports-fixes-20261008/clone-batch2/{reference,clone}-renderer-results-final.json`. Actual generic upload/reopen and CohortDetail HTML/XLSX populated/empty output are proven, with semantic comparisons in `decoded-renderer-comparison-final.json`. Malformed/unsupported cases intentionally finish FAILED with controlled errors. Earlier overwritten result files are retained but are not authoritative. The six sticker fields and barcode also match in `sticker-comparison.json`.
 
 The final B-04 suite passes10/10 browser cases and the extra suite passes4/4, with no browser page errors. The workbook decoder confirms the fallback value and header-toggle rows. The focused Java suite passes43 assertions. Source/package validation and whitespace checks pass. `cleanup-objects.py` records zero exact owned definition/design/request UUIDs and zero R3 prefix residuals; clinical rows and pre-audit history remain untouched.
+
+## Validation and processor eligibility batch
+
+The remaining guarded workflows now pass paired headless probes on the existing native apps. The reference overrides retain their pinned upstream source and validate before changing stored definitions/configurations.
+
+| Audit ID | Repair and proof |
+| --- | --- |
+| A-07 | Resource download checks both the selected design and its resource before dereference; wrong pairs return404. |
+| A-12 | The previously added missing-template exception is proven through a real failed request and readable error details. |
+| A-13 | Run refreshes available rendering modes and rejects a deleted selection with a visible field error before creating a request. |
+| A-14 | Date input uses non-lenient, complete-string parsing. Rejected input is retained in an accessible text/error control instead of being passed back into a widget that crashes on invalid defaults. Impossible dates and trailing junk create no request; a valid adjacent date runs successfully. |
+| B-01 | Unknown, interface and abstract definition types use an explicitly handled400 response. Legacy MVC does not honor the annotation-only exception mapping here. |
+| B-07 | Map keys must be nonempty before persistence. The chooser retains the selected definition and blank key, focuses the field and accepts a corrected key. |
+| C-5 | Logic column names must be nonempty/unique with matching expressions; validation precedes cloning/mutation. The editor retains duplicate entries, focuses the duplicate and accepts correction. |
+| C-6 | Processor names, constructible processor classes, Java properties and design references validate before mutation. The dialog retains required-field and malformed-property input, announces the error and permits correction. Invalid design UUIDs remain controlled404. |
+| C-8 | One eligibility predicate gates both displayed actions and direct execution: status flags, on-demand mode, retirement and selected design. Missing UUIDs return404; ineligible processors cannot write processing logs. Success is announced only after execution succeeds. |
+
+The paired guard evidence is `openmrs-native-data/reports-fixes-20261008/final-negatives/{reference,clone}-negative-results-final.json`. It covers14 cases across the nine IDs; initial failures and corrected reruns are retained separately. Two page errors from the earlier broad reference probe are retained in that evidence rather than silently discarded. The subsequent focused editable-form suite has **zero page errors**.
+
+`tests/headless-form-errors.mjs` proves five recoverable form cases, including correcting and saving each rejected value. `test-results/form-errors/results.json` is the final5/5 result, with screenshots and accessibility trees. Its first exploratory dimension attempt had a chooser-navigation race; the final script waits for the selected-definition navigation before editing. The shared JSP submit handler keeps malformed server-validated properties in the existing dialog; field errors use alert roles, `aria-invalid`, descriptions and focus. The cleanup ledger proves all exact R6 definition/processor UUIDs are gone.
+
+`tests/headless-live-update.mjs` separately verifies the older stale-data observation. Both SqlDataSetDefinition and IterableSqlDataSetDefinition now export7/9, then11/13 after editing the same definition, then all60 rows after another save, using new requests and the same containing report. `test-results/live-update/results.json` and downloaded CSVs contain the request identities and outputs. **Currently passing; original cause unresolved.** No cache-related source fix is claimed. All exact R5 definitions/designs/requests are cleaned.
+
+The source gate passes54 focused Java assertions, including strict dates and status/mode/design processor eligibility, plus native compilation, source/package validation and whitespace checks. No image was built or published, and no branch was pushed.
+
+## Approved Reports baseline reconciliation
+
+After proof fixtures were removed, `tests/reconcile-reporting-baseline.py` compared the complete current Reports UUID sets against the immutable seed and the pre-audit snapshot. It refused unknown/missing rows and changed target metadata, checked external dependencies, and then removed only the approved five old QA definitions, one design and two requests through the existing APIs. The original seed was opened with SQLite read-only/immutable mode and never modified. Clinical tables and configuration were untouched.
+
+`test-results/baseline-reconciliation/applied.json` records names/UUIDs, before metadata, dependency checks, each deletion and the final exact seed UUID-set matches:6 serialized definitions,2 designs,33 requests,1 processor. The earlier B4 cleanup snapshot intentionally predates this separately authorized baseline change.

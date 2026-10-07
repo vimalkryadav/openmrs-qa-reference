@@ -245,6 +245,29 @@ public class ReferenceBatchRegression {
         processor.process(failed, new Properties()); checks++;
         Report live = new Report(); live.setReportData(new ReportData());
         processor.process(live, new Properties()); checks++;
+        java.text.SimpleDateFormat dateFormat = new java.text.SimpleDateFormat("MM/dd/yyyy");
+        check(org.openmrs.module.reporting.web.util.ReportInputValidation.parseDate("09/29/2026", dateFormat) != null, "valid date");
+        for (String invalid : new String[]{"99/99/2026", "02/30/2026", "09/29/2026junk"}) {
+            try { org.openmrs.module.reporting.web.util.ReportInputValidation.parseDate(invalid, dateFormat); throw new AssertionError("accepted invalid date"); }
+            catch (IllegalArgumentException expected) { checks++; }
+        }
+        org.openmrs.module.reporting.report.ReportProcessorConfiguration config = new org.openmrs.module.reporting.report.ReportProcessorConfiguration();
+        config.setProcessorMode(org.openmrs.module.reporting.report.ReportProcessorConfiguration.ProcessorMode.ON_DEMAND);
+        config.setRunOnSuccess(true); config.setRunOnError(false);
+        detailRequest.setStatus(org.openmrs.module.reporting.report.ReportRequest.Status.COMPLETED);
+        check(org.openmrs.module.reporting.web.util.ReportInputValidation.canProcess(detailRequest, config), "eligible success processor");
+        detailRequest.setStatus(org.openmrs.module.reporting.report.ReportRequest.Status.FAILED);
+        check(!org.openmrs.module.reporting.web.util.ReportInputValidation.canProcess(detailRequest, config), "success-only processor hidden for failure");
+        config.setRunOnError(true);
+        check(org.openmrs.module.reporting.web.util.ReportInputValidation.canProcess(detailRequest, config), "eligible failure processor");
+        config.setProcessorMode(org.openmrs.module.reporting.report.ReportProcessorConfiguration.ProcessorMode.AUTOMATIC);
+        check(!org.openmrs.module.reporting.web.util.ReportInputValidation.canProcess(detailRequest, config), "automatic processor cannot run on demand");
+        config.setProcessorMode(org.openmrs.module.reporting.report.ReportProcessorConfiguration.ProcessorMode.ON_DEMAND);
+        ReportDesign restriction = new ReportDesign(); restriction.setUuid("owned"); config.setReportDesign(restriction);
+        check(org.openmrs.module.reporting.web.util.ReportInputValidation.canProcess(detailRequest, config), "matching design with format argument");
+        restriction.setUuid("other");
+        check(!org.openmrs.module.reporting.web.util.ReportInputValidation.canProcess(detailRequest, config), "different design rejected");
+        check(!org.openmrs.module.reporting.web.util.ReportInputValidation.canProcess(null, config), "missing request rejected");
         System.out.println("PASS " + checks + " focused reference assertions");
     }
 }
