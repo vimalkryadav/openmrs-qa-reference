@@ -17,6 +17,9 @@ import org.openmrs.api.context.Context;
 import org.openmrs.module.htmlwidgets.web.WidgetUtil;
 import org.openmrs.module.reporting.data.DataDefinition;
 import org.openmrs.module.reporting.dataset.definition.LogicDataSetDefinition;
+import org.openmrs.module.reporting.dataset.IterableSqlDataSet;
+import org.openmrs.module.reporting.dataset.DataSet;
+import org.openmrs.module.reporting.report.ReportData;
 import org.openmrs.module.reporting.dataset.definition.PatientDataSetDefinition;
 import org.openmrs.module.reporting.evaluation.EvaluationContext;
 import org.openmrs.module.reporting.evaluation.MissingDependencyException;
@@ -132,6 +135,17 @@ public class QueryParameterFormController {
 					long startTime = System.nanoTime();
 					// Evaluate the parameterizable and populate the model
 					results = ParameterizableUtil.evaluateParameterizable(parameterizable, evaluationContext);						
+                    if (results instanceof IterableSqlDataSet) {
+                        results = ((IterableSqlDataSet) results).getPreview(50);
+                        model.addObject("previewRowLimit", 50);
+                    } else if (results instanceof ReportData) {
+                        for (Map.Entry<String, DataSet> dataSet : ((ReportData) results).getDataSets().entrySet()) {
+                            if (dataSet.getValue() instanceof IterableSqlDataSet) {
+                                dataSet.setValue(((IterableSqlDataSet) dataSet.getValue()).getPreview(50));
+                                model.addObject("previewRowLimit", 50);
+                            }
+                        }
+                    }
 					//model.addObject("results", results);
 					request.getSession().setAttribute("results", results);
 					long executionTime = (System.nanoTime() - startTime) / 1000000L;

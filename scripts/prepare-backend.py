@@ -54,7 +54,7 @@ def main():
         if native:
             raise RuntimeError('Native dependencies missing: run dev/export-runtime.py before removing baseline images')
         extract_dependencies()
-    cp = '/work/deps/*:' + ':'.join('/work/backend-inputs/' + p.name for p in sorted((BUILD / 'backend-inputs').glob('*.omod')))
+    cp = '/work/backend-classes:/work/deps/*:' + ':'.join('/work/backend-inputs/' + p.name for p in sorted((BUILD / 'backend-inputs').glob('*.omod')))
     groups = [('backend-src', 'backend-classes'), ('controller-src', 'controller-classes'),
               ('core-src', 'core-classes'), ('legacyui-src', 'legacyui-classes'),
               ('patientdocuments-src', 'patientdocuments-classes'), ('cohort-src', 'cohort-classes'),

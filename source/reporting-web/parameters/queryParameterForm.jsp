@@ -55,6 +55,9 @@ $j(document).ready(function() {
 		<div id="wrapper">
             <br/>
             <div>
+                <c:if test="${previewRowLimit != null}">
+                    Results have been limited to <c:out value="${previewRowLimit}" /> rows per streaming SQL dataset
+                </c:if>
                 <c:if test="${randomBaseCohortSize != null}">
                     Results have been limited to a preview cohort of <c:out value="${randomBaseCohortSize}" /> patients
                 </c:if>
