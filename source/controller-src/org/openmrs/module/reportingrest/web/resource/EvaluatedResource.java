@@ -1,0 +1,218 @@
+package org.openmrs.module.reportingrest.web.resource;
+
+import org.openmrs.api.context.Context;
+import org.openmrs.module.reporting.web.util.StructuredReportParameters;
+import java.util.Map;
+import java.util.LinkedHashMap;
+import org.openmrs.module.reporting.definition.library.AllDefinitionLibraries;
+import org.openmrs.module.reporting.definition.service.DefinitionService;
+import org.openmrs.module.reporting.evaluation.Definition;
+import org.openmrs.module.reporting.evaluation.Evaluated;
+import org.openmrs.module.reporting.evaluation.EvaluationContext;
+import org.openmrs.module.reporting.evaluation.EvaluationException;
+import org.openmrs.module.reporting.evaluation.parameter.Parameter;
+import org.openmrs.module.webservices.rest.SimpleObject;
+import org.openmrs.module.webservices.rest.web.ConversionUtil;
+import org.openmrs.module.webservices.rest.web.RequestContext;
+import org.openmrs.module.webservices.rest.web.annotation.PropertyGetter;
+import org.openmrs.module.webservices.rest.web.representation.Representation;
+import org.openmrs.module.webservices.rest.web.resource.api.Retrievable;
+import org.openmrs.module.webservices.rest.web.resource.impl.DelegatingCrudResource;
+import org.openmrs.module.webservices.rest.web.response.ConversionException;
+import org.openmrs.module.webservices.rest.web.response.ResponseException;
+import org.springframework.util.StringUtils;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import javax.servlet.http.HttpServletRequest;
+
+/**
+ * Common functionality for resources that evaluate definitions
+ */
+public abstract class EvaluatedResource<T extends Evaluated> extends DelegatingCrudResource<T> implements Retrievable {
+
+    /**
+     * @param evaluated the delegate
+     * @return the uuid of the definition that is defined on this object
+     */
+    @PropertyGetter("uuid")
+    public String getUuidOfEvaluatedDefinition(T evaluated) {
+        return evaluated.getDefinition().getUuid();
+    }
+
+    /**
+     * Overridden here since the unique id is not on Evaluated directly
+     * @see org.openmrs.module.webservices.rest.web.resource.impl.BaseDelegatingResource#getUniqueId(java.lang.Object)
+     */
+    @Override
+    public String getUniqueId(T evaluated) {
+        return evaluated.getDefinition().getUuid();
+    }
+
+    @Override
+    public List<Representation> getAvailableRepresentations() {
+        return Arrays.asList(Representation.DEFAULT);
+    }
+
+
+    @Override
+    public T getByUniqueId(String uniqueId) {
+        // not used
+        return null;
+    }
+
+    @Override
+    public T newDelegate() {
+        // not used (?)
+        return null;
+    }
+
+    @Override
+    public T save(T delegate) {
+        // not used
+        return null;
+    }
+
+    @Override
+    protected void delete(T delegate, String reason, RequestContext context) throws ResponseException {
+        // not used
+    }
+
+    @Override
+    public void purge(T delegate, RequestContext context) throws ResponseException {
+        // not used
+    }
+
+    /**
+     * Fetches all parameters needed for definition from the request. First looks at request parameters, and looks
+     * at postBody next
+     *
+     * @param definition
+     * @param requestContext
+     * @param parameterPrefix
+     * @param postBody optional
+     * @return
+     * @throws ConversionException
+     */
+    protected EvaluationContext getEvaluationContextWithParameters(Definition definition, RequestContext requestContext, String parameterPrefix, SimpleObject postBody) throws ConversionException {
+        HttpServletRequest request = requestContext.getRequest();
+        EvaluationContext evalContext = new EvaluationContext();
+
+        // get the params off the requestContext and put them on the evalContext
+        for (Parameter param : definition.getParameters()) {
+            String paramName = StringUtils.hasText(parameterPrefix) ? parameterPrefix + param.getName() : param.getName();
+            Object convertedValue = null;
+
+            if (StructuredReportParameters.targets(definition).containsKey(param.getName())) {
+                Object input = request.getParameter(paramName);
+                if (input == null && postBody != null) input = postBody.get(paramName);
+                convertedValue = StructuredReportParameters.parse(definition, param.getName(), input);
+            } else if (param.getCollectionType() != null) {
+
+                // we don't create collection until we confirm we have a parameter value, see https://issues.openmrs.org/browse/REPORT-835
+                Collection collection = null;
+
+                if (request.getParameterMap().containsKey(paramName)) {
+                    collection = createCollection(param.getCollectionType());
+                    if (request.getParameterValues(paramName) != null) {
+                        for (String httpParamValue : request.getParameterValues(paramName)) {
+                            if (httpParamValue != null) {
+                                collection.add(ConversionUtil.convert(httpParamValue, param.getType()));
+                            }
+                        }
+                    }
+                }
+                else {
+                    // if there were no request params, look at the postBody
+                    if (postBody != null && postBody.containsKey(paramName)) {
+                        collection = createCollection(param.getCollectionType());
+                        Object posted = postBody.get(paramName);
+                        if (posted != null) {
+                            if (posted instanceof Collection) {
+                                for (Object item : ((Collection) posted)) {
+                                    if (item != null) {
+                                        collection.add(ConversionUtil.convert(item, param.getType()));
+                                    }
+                                }
+                            }
+                            else {
+                                throw new IllegalArgumentException("Parameter " + paramName + " in POST body should be an array");
+                            }
+                        }
+                    }
+                }
+                convertedValue = collection;
+
+            } else {
+                String httpParamValue = request.getParameter(paramName);
+                if (httpParamValue != null) {
+                    convertedValue = ConversionUtil.convert(httpParamValue, param.getType());
+                } else if (postBody != null) {
+                    convertedValue = ConversionUtil.convert(postBody.get(paramName), param.getType());
+                }
+            }
+
+            if (param.isRequired() && convertedValue == null) {
+                throw new IllegalArgumentException("Missing parameter: " + paramName);
+            }
+
+            evalContext.addParameterValue(paramName, convertedValue);
+        }
+        StructuredReportParameters.validate(definition, evalContext.getParameterValues());
+        return evalContext;
+    }
+
+    @PropertyGetter("context")
+    public SimpleObject getContextOfEvaluatedDefinition(T evaluated) {
+        EvaluationContext context = evaluated.getContext();
+        Map<String,Object> parameters = new LinkedHashMap<String,Object>();
+        for (Map.Entry<String,Object> entry : context.getParameterValues().entrySet())
+            parameters.put(entry.getKey(), StructuredReportParameters.transport(evaluated.getDefinition(), entry.getKey(), entry.getValue()));
+        SimpleObject result = new SimpleObject();
+        result.add("evaluationId", context.getEvaluationId());
+        result.add("evaluationDate", ConversionUtil.convertToRepresentation(context.getEvaluationDate(), Representation.REF));
+        result.add("evaluationLevel", context.getEvaluationLevel());
+        result.add("limit", context.getLimit());
+        result.add("baseCohort", ConversionUtil.convertToRepresentation(context.getBaseCohort(), Representation.REF));
+        result.add("contextValues", ConversionUtil.convertToRepresentation(context.getContextValues(), Representation.REF));
+        result.add("parameterValues", ConversionUtil.convertToRepresentation(parameters, Representation.REF));
+        return result;
+    }
+
+    private Collection createCollection(Class collectionType) {
+        if (Set.class.isAssignableFrom(collectionType)) {
+            return new LinkedHashSet();
+        } else if (List.class.isAssignableFrom(collectionType)) {
+            return new ArrayList();
+        } else {
+            throw new IllegalStateException("Cannot handle collection type: " + collectionType);
+        }
+    }
+
+    protected <Def extends Definition> Def getDefinitionByUniqueId(DefinitionService<Def> svc, Class<Def> clazz, String uniqueId) {
+        AllDefinitionLibraries definitionLibraries = Context.getRegisteredComponents(AllDefinitionLibraries.class).get(0);
+        Def definition = definitionLibraries.getDefinition(clazz, uniqueId);
+        if (definition == null) {
+            definition = svc.getDefinitionByUuid(uniqueId);
+        }
+        return definition;
+    }
+
+    protected <Def extends Definition> Evaluated<Def> evaluate(Def definition, DefinitionService<Def> svc, EvaluationContext ctx) throws EvaluationException {
+        Evaluated<Def> evaluated = svc.evaluate(definition, ctx);
+
+        // there seems to be a bug in the reporting module that doesn't set these
+        if (evaluated.getDefinition().getName() == null)
+            evaluated.getDefinition().setName(definition.getName());
+        if (evaluated.getDefinition().getDescription() == null)
+            evaluated.getDefinition().setDescription(definition.getDescription());
+        if (evaluated.getDefinition().getUuid() == null)
+            evaluated.getDefinition().setUuid(definition.getUuid());
+
+        return evaluated;
+    }
+}

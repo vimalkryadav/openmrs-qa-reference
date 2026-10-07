@@ -33,6 +33,7 @@ if [ "${1:-}" = '--native' ]; then
     node ../../node_modules/typescript/bin/tsc --noEmit
     node ../../node_modules/@rspack/cli/bin/rspack.js --mode production
     output=reports-dist; [ "$package" = esm-admin-openconceptlab-app ] && output=ocl-dist
+    rm -rf "$root/.build/frontend/$output"
     mkdir -p "$root/.build/frontend/$output"
     cp -R dist/. "$root/.build/frontend/$output/"
     done
@@ -46,6 +47,7 @@ cd /src/packages/$package
 node ../../node_modules/typescript/bin/tsc --noEmit
 node ../../node_modules/@rspack/cli/bin/rspack.js --mode production
 output=reports-dist; [ "$package" = esm-admin-openconceptlab-app ] && output=ocl-dist
+rm -rf /out/$output
 mkdir -p /out/$output
 cp -R dist/. /out/$output/
 done
@@ -53,8 +55,15 @@ done
 fi
 python3 - "$root/.build/frontend" <<'PY'
 import hashlib,pathlib,re,sys
-root=pathlib.Path(sys.argv[1]);digest=hashlib.sha256((root/'reports-dist/openmrs-esm-reports-app.js').read_bytes()).hexdigest()[:12]
-ocl_digest=hashlib.sha256((root/'ocl-dist/openmrs-esm-openconceptlab-app.js').read_bytes()).hexdigest()[:12]
+root=pathlib.Path(sys.argv[1])
+def bundle_digest(folder):
+ digest=hashlib.sha256()
+ for file in sorted(folder.rglob('*')):
+  if file.is_file():
+   digest.update(file.relative_to(folder).as_posix().encode());digest.update(b'\0');digest.update(file.read_bytes())
+ return digest.hexdigest()[:12]
+digest=bundle_digest(root/'reports-dist')
+ocl_digest=bundle_digest(root/'ocl-dist')
 for name in ['Dockerfile','importmap.json']:
  p=root/name;p.write_text(re.sub(r'openmrs-esm-reports-app-4\.4\.0-reports-flows(?:-[0-9a-f]{12})?', 'openmrs-esm-reports-app-4.4.0-reports-flows-'+digest,p.read_text()))
  p.write_text(re.sub(r'openmrs-esm-openconceptlab-app-4\.4\.0-offline(?:-[0-9a-f]{12})?', 'openmrs-esm-openconceptlab-app-4.4.0-offline-'+ocl_digest,p.read_text()))

@@ -276,6 +276,9 @@ public class ReferenceBatchRegression {
         org.openmrs.module.reporting.common.SortCriteria runtimeSort=(org.openmrs.module.reporting.common.SortCriteria)org.openmrs.module.reporting.web.util.StructuredReportParameters.parse(runtimeObs,"sortCriteria","[{\"column\":\"Object ID\",\"direction\":\"DESC\"}]");
         check(runtimeSort.getSortElements().get(0).getDirection()==org.openmrs.module.reporting.common.SortCriteria.SortDirection.DESC,"native sort direction parsed");
         check(runtimeObs.getSortCriteria()==null,"runtime parsing leaves saved sort untouched");
+        try { org.openmrs.module.reporting.web.util.StructuredReportParameters.parse(runtimeObs,"sortCriteria","[{\"column\":\"Object ID\",\"direction\":\"DESC\",\"unexpected\":true}]"); throw new AssertionError("Unknown sort field accepted"); }
+        catch (IllegalArgumentException expected) { check(expected.getMessage().contains("Unsupported object dataset fields"),"unknown structured fields rejected"); }
+
         try { org.openmrs.module.reporting.web.util.StructuredReportParameters.parse(runtimeObs,"sortCriteria","[{\"column\":\"Object ID\",\"direction\":\"SIDEWAYS\"}]"); throw new AssertionError("Invalid sort accepted"); }
         catch (IllegalArgumentException expected) { checks++; }
         ReportDefinition runtimeReport=new ReportDefinition();

@@ -124,7 +124,7 @@ public final class RowObjectDefinitionEditor {
                     ? new ArrayList<Map<String,Object>>() : JSON.readValue(input, List.class);
             if ("sortCriteria".equals(field)) {
                 SortCriteria criteria = new SortCriteria();
-                for (Map<String,Object> row : rows) criteria.addSortElement((String)row.get("column"), SortCriteria.SortDirection.valueOf((String)row.get("direction")));
+                for (Map<String,Object> row : rows) { requireFields(row,"column","direction"); criteria.addSortElement((String)row.get("column"), SortCriteria.SortDirection.valueOf((String)row.get("direction"))); }
                 return criteria;
             }
             if ("rowFilters".equals(field)) {
@@ -140,6 +140,7 @@ public final class RowObjectDefinitionEditor {
             RowPerObjectDataSetDefinition draft = definition.getClass().newInstance();
             Set<String> names = new HashSet<String>();
             for (Map<String,Object> row : rows) {
+                requireFields(row,"name","uuid","mappings","converters");
                 String name = (String)row.get("name");
                 if (name == null || name.trim().isEmpty() || !names.add(name.trim())) throw new IllegalArgumentException("Column names must be nonempty and unique");
                 DataDefinition source = null;
@@ -157,6 +158,10 @@ public final class RowObjectDefinitionEditor {
             if (error instanceof IllegalArgumentException) throw (IllegalArgumentException)error;
             throw new IllegalArgumentException("Invalid object dataset configuration: " + error.getMessage(),error);
         }
+    }
+
+    private static void requireFields(Map<String,Object> row, String... fields) {
+        if (row == null || !Arrays.asList(fields).containsAll(row.keySet())) throw new IllegalArgumentException("Unsupported object dataset fields");
     }
 
     @SuppressWarnings("unchecked")
