@@ -37,7 +37,7 @@ try:
         time.sleep(1)
     assert ledger['newRequests'], 'Existing scheduler did not enqueue within90 seconds'
     # Stop only our schedule before polling the actual queued worker/export.
-    deleted = s.c.delete(s.path(rest+'reportRequest/'+uuid), headers=s.token)
+    deleted = s.c.delete(s.path(rest+'reportRequest/'+uuid), headers={**s.token, 'Accept':'application/json'})
     assert deleted.status_code in (200,204,404), deleted.text
     ledger['initialScheduleCleanupStatus'] = deleted.status_code
     for child in ledger['newRequests']:
@@ -57,7 +57,7 @@ try:
 finally:
     remaining = s.get(rest+'reportRequest/'+uuid, headers={'Accept':'application/json'})
     if remaining.status_code != 404:
-        deleted = s.c.delete(s.path(rest+'reportRequest/'+uuid), headers=s.token)
+        deleted = s.c.delete(s.path(rest+'reportRequest/'+uuid), headers={**s.token, 'Accept':'application/json'})
         assert deleted.status_code in (200,204), deleted.text
     ledger['scheduleCleanupStatus'] = s.get(rest+'reportRequest/'+uuid, headers={'Accept':'application/json'}).status_code
     assert ledger['scheduleCleanupStatus'] == 404
