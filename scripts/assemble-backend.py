@@ -56,3 +56,21 @@ replacements=classes("owa-classes")
 for page in (ROOT/"owa-web").rglob("*.jsp"):
     replacements["web/module/"+page.relative_to(ROOT/"owa-web").as_posix()]=page.read_bytes()
 (ROOT/"backend/owa-1.15.0.omod").write_bytes(patched_zip(original,replacements))
+
+original=(ROOT/"backend-inputs/calculation-2.0.0.omod").read_bytes()
+with zipfile.ZipFile(io.BytesIO(original)) as archive:
+    name=next(n for n in archive.namelist() if n.endswith("calculation-api-2.0.0.jar"))
+    api=archive.read(name)
+compiled=classes("calculation-classes")
+# This legacy OMOD duplicates API classes at its root and in lib; patch both.
+replacements=dict(compiled)
+with zipfile.ZipFile(io.BytesIO(original)) as archive:
+    config=archive.read("config.xml").decode()
+# The typed console uses the installed htmlwidgets controls and request parser.
+assert "<require_modules>" not in config
+config=config.replace("<aware_of_modules>", '<require_modules><require_module version="2.0.1">org.openmrs.module.htmlwidgets</require_module></require_modules>\n<aware_of_modules>')
+replacements["config.xml"]=config.encode()
+replacements[name]=patched_zip(api,{key:data for key,data in compiled.items() if "/web/" not in key})
+for page in (ROOT/"calculation-web").rglob("*.jsp"):
+    replacements["web/module/"+page.relative_to(ROOT/"calculation-web").as_posix()]=page.read_bytes()
+(ROOT/"backend/calculation-2.0.0.omod").write_bytes(patched_zip(original,replacements))

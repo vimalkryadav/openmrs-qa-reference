@@ -10,6 +10,7 @@ COPY patientdocuments-1.1.0.omod /openmrs/distribution/openmrs_modules/patientdo
 COPY core/ /tmp/reports-core/
 RUN cd /tmp/reports-core && jar uf /openmrs/distribution/openmrs_core/openmrs.war WEB-INF && rm -rf /tmp/reports-core
 COPY owa-1.15.0.omod /openmrs/distribution/openmrs_modules/owa-1.15.0.omod
+COPY calculation-2.0.0.omod /openmrs/distribution/openmrs_modules/calculation-2.0.0.omod
 COPY openconceptlab-3.1.0.omod /openmrs/distribution/openmrs_modules/openconceptlab-3.1.0.omod
 COPY openconceptlab/ /openmrs/distribution/openmrs_owas/openconceptlab/
 RUN chmod -R a+rX /openmrs/distribution/openmrs_owas/openconceptlab

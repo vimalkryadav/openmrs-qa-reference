@@ -93,7 +93,7 @@ def main():
     groups = [('backend-src', 'backend-classes'), ('controller-src', 'controller-classes'),
               ('core-src', 'core-classes'), ('legacyui-src', 'legacyui-classes'),
               ('patientdocuments-src', 'patientdocuments-classes'), ('cohort-src', 'cohort-classes'),
-              ('logic-source', 'logic-classes'), ('ocl-src', 'ocl-classes'), ('ocl-web-src', 'ocl-web-classes'), ('owa-src', 'owa-classes')]
+              ('logic-source', 'logic-classes'), ('ocl-src', 'ocl-classes'), ('ocl-web-src', 'ocl-web-classes'), ('owa-src', 'owa-classes'), ('calculation-src', 'calculation-classes')]
     # Mount repository root too, because .build source paths are symlinks into tracked source/.
     for folder, output in groups:
         paths = sorted(p for p in (ROOT / 'source' / folder).rglob('*.java') if '/src/test/' not in str(p))
