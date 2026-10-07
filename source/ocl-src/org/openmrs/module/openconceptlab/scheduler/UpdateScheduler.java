@@ -21,63 +21,63 @@ import java.util.concurrent.ScheduledFuture;
  * It is used to run {@link Importer#run()} either as a scheduled task or on request.
  */
 public class UpdateScheduler {
-	
+
 	public static final long DAY_PERIOD = 24 * 3600000;
-	
+
 	ThreadPoolTaskScheduler scheduler;
-	
+
 	ScheduledFuture<?> scheduledUpdate;
-	
+
 	Importer importer;
-	
+
 	ImportService importService;
-	
+
     public void setScheduler(ThreadPoolTaskScheduler scheduler) {
 	    this.scheduler = scheduler;
     }
-    
+
     public void setImporter(Importer importer) {
 	    this.importer = importer;
     }
-    
+
     public void setImportService(ImportService importService) {
 	    this.importService = importService;
     }
-	
+
 	public synchronized void schedule(Subscription subscription) {
 		importService.saveSubscription(subscription);
-		
+
 		if (scheduledUpdate != null) {
 			scheduledUpdate.cancel(false);
 		}
-		
+
         // Local configuration is retained; remote background imports are disabled.
         scheduledUpdate = null;
 	}
-	
+
 	public synchronized void unschedule() {
 		importService.unsubscribe();
-		
+
 		if (scheduledUpdate != null) {
 			scheduledUpdate.cancel(false);
 			scheduledUpdate = null;
 		}
 	}
-	
+
 	public void scheduleUpdate() {
 		Subscription subscription = importService.getSubscription();
 		if (subscription != null) {
 			schedule(subscription);
 		}
 	}
-	
+
 	public void scheduleNow() {
 		if (importer.isRunning()) {
 			throw new IllegalStateException("Cannot start the update, if there is another update in progress.");
 		}
-				
+
 		scheduler.submit(importer);
-		
+
 		//delay at most 10 seconds until the update starts
 		try {
 			for (int i = 0; i < 100; i++) {

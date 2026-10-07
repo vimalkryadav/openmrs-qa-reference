@@ -61,7 +61,7 @@ public class Importer implements Runnable {
 	private ImportService importService;
 
 	private ConceptService conceptService;
-	
+
 	private OclConceptService oclConceptService;
 
 	private OclClient oclClient;
@@ -87,7 +87,7 @@ public class Importer implements Runnable {
     public void setConceptService(ConceptService conceptService) {
 	    this.conceptService = conceptService;
     }
-    
+
     public void setOclConceptService(OclConceptService oclConceptService) {
 		this.oclConceptService = oclConceptService;
     }
@@ -213,7 +213,7 @@ public class Importer implements Runnable {
 			return message;
 		}
 	}
-	
+
 	public static String getUserFriendlyErrorMessage(Throwable e) {
 		String message = e.getMessage();
 		Throwable rootCause = ExceptionUtils.getRootCause(e);

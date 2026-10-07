@@ -209,7 +209,7 @@ public class ImportResource extends DelegatingCrudResource<Import> implements Up
     public static Integer getUpToDateItemsCount(Import instance){
         return getImportService().getImportItemsCount(instance, states(ItemState.UP_TO_DATE));
     }
-    
+
     @PropertyGetter("duplicateItems")
     public static Integer getDuplicateItemCount(Import instance){
         return getImportService().getImportItemsCount(instance, states(ItemState.DUPLICATE));

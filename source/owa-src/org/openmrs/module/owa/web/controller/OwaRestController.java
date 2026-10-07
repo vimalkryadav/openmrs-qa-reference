@@ -51,18 +51,18 @@ import org.openmrs.module.owa.utils.OwaUtils;
 @Deprecated
 @Controller
 public class OwaRestController {
-	
+
 	private static final Log log = LogFactory.getLog(OwaRestController.class);
-	
+
 	// -------------------------------------------------------------------------
 	// Dependencies
 	// -------------------------------------------------------------------------
 	@Autowired
 	private AppManager appManager;
-	
+
 	@Autowired
 	private MessageSourceService messageSourceService;
-	
+
 	// -------------------------------------------------------------------------
 	// REST implementation
 	// -------------------------------------------------------------------------
@@ -76,7 +76,7 @@ public class OwaRestController {
 		}
 		return appList;
 	}
-	
+
 	@RequestMapping(value = "/rest/owa/settings", method = RequestMethod.GET)
 	@ResponseBody
 	public List<GlobalProperty> getSettings() {
@@ -88,7 +88,7 @@ public class OwaRestController {
 		}
 		return owaSettings;
 	}
-	
+
 	@RequestMapping(value = "/rest/owa/settings", method = RequestMethod.POST)
 	@ResponseBody
 	public List<GlobalProperty> updateSettings(List<GlobalProperty> settings) {
@@ -103,7 +103,7 @@ public class OwaRestController {
 		}
 		return owaSettings;
 	}
-	
+
 	@RequestMapping(value = "/rest/owa/addapp", method = RequestMethod.POST)
 	@ResponseBody
 	public List<App> upload(@RequestParam("file") MultipartFile file, HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -152,7 +152,7 @@ public class OwaRestController {
 		}
 		return appList;
 	}
-	
+
 	@RequestMapping(value = "/rest/owa/installapp", method = RequestMethod.POST)
 	@ResponseBody
 	public ResponseEntity<List<App>> install(@RequestBody InstallAppRequestObject urlObject,
@@ -160,7 +160,7 @@ public class OwaRestController {
         response.sendError(400, "External app store downloads are disabled. Upload a local Open Web App ZIP package.");
         return new ResponseEntity<List<App>>(HttpStatus.BAD_REQUEST);
     }
-    
+
 	@RequestMapping(value = "/rest/owa/allowModuleWebUpload", method = RequestMethod.GET)
 	@ResponseBody
 	public Boolean allowWebAdmin(HttpServletRequest request, HttpServletResponse response) {

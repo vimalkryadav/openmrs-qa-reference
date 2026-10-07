@@ -27,26 +27,26 @@ import java.io.IOException;
  * @author sunbiz
  */
 public class OwaFilter implements Filter {
-	
+
 	public static final String DEFAULT_BASE_URL = "/owa";
-	
+
 	private static final String ADD_ON_MANAGER = "addonmanager";
-	
+
 	private static final Logger logger = LoggerFactory.getLogger(OwaFilter.class);
-	
+
 	private String openmrsPath;
-	
+
 	@Override
 	public void init(FilterConfig fc) throws ServletException {
 		openmrsPath = fc.getServletContext().getContextPath();
 	}
-	
+
 	@Override
 	public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) throws IOException, ServletException {
 		HttpServletRequest request = (HttpServletRequest) req;
-		
+
 		String owaBasePath = DEFAULT_BASE_URL;
-		
+
 		try {
 			Context.addProxyPrivilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES);
 			owaBasePath = Context.getAdministrationService()
@@ -55,7 +55,7 @@ public class OwaFilter implements Filter {
 		finally {
 			Context.removeProxyPrivilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES);
 		}
-		
+
         // The canonical local route remains available alongside a configured local base.
         if (request.getServletPath().startsWith(DEFAULT_BASE_URL + "/")) owaBasePath = DEFAULT_BASE_URL;
 		String requestURL = null;
@@ -64,7 +64,7 @@ public class OwaFilter implements Filter {
 		} else {
 			requestURL = request.getServletPath();
 		}
-		
+
 		String loginUrl;
 		try {
 			Context.addProxyPrivilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES);
@@ -73,7 +73,7 @@ public class OwaFilter implements Filter {
 		finally {
 			Context.removeProxyPrivilege(PrivilegeConstants.GET_GLOBAL_PROPERTIES);
 		}
-		
+
 		if (Context.isAuthenticated()) {
 			if (requestURL.startsWith(owaBasePath)) {
 				String newURL = requestURL.replace(owaBasePath, "/ms/owa/fileServlet");
@@ -93,16 +93,16 @@ public class OwaFilter implements Filter {
 			}
 		}
 	}
-	
+
 	//owaBasePath can be either full path (must contain protocol) or relative servlet path
 	public static boolean isFullBasePath(String owaBasePath) {
 		return owaBasePath.contains("://");
 	}
-	
+
 	@Override
 	public void destroy() {
 	}
-	
+
 	private void doFilter(ServletRequest req, ServletResponse res, FilterChain chain, String loginUrl) throws IOException,
 	        ServletException {
 		HttpServletRequest request = (HttpServletRequest) req;
@@ -114,5 +114,5 @@ public class OwaFilter implements Filter {
 			chain.doFilter(req, res);
 		}
 	}
-	
+
 }

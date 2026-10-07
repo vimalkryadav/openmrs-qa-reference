@@ -89,26 +89,26 @@ session.removeAttribute(WebConstants.OPENMRS_ERROR_ATTR);
                 <h1><span>Manage Apps:</span></h1>
                 <table width="100%" class="table table-striped table-hover table-condensed" id="sort">
                     <thead>
-                        <tr>                     
+                        <tr>
                             <th>Logo</th>
                             <th id="sorting">Name</th>
                             <th id="sorting">Developer</th>
-                            <th>Version</th> 
-                            <th>Delete</th>                       
+                            <th>Version</th>
+                            <th>Delete</th>
                         </tr>
                     </thead>
                     <tbody style="cursor:pointer;">
                         <c:forEach items="${appList}" var="app">
 
 
-                            <tr>                      
+                            <tr>
                                 <td onclick="location.href = '${appBaseUrl}/${app.folderName}/${app.launchPath}'">
-                                    <img style="height:48px;width:48px;" src="${appBaseUrl}/${app.folderName}/${app.icons.icon48}"></td>            
+                                    <img style="height:48px;width:48px;" src="${appBaseUrl}/${app.folderName}/${app.icons.icon48}"></td>
                                 <td width="65%" align="top"onclick="location.href = '${appBaseUrl}/${app.folderName}/${app.launchPath}'" valign="top">
                                     <span style="font-weight: bold">${app.name}</span> </br> ${app.description}
                                 </td>
                                 <td width="20%" valign="top" onclick="location.href = '${appBaseUrl}/${app.folderName}/${app.launchPath}'" valign="top">${app.developer.name}</td>
-                                <td width="5%" valign="top" onclick="location.href = '${appBaseUrl}/${app.folderName}/${app.launchPath}'" valign="top"> ${app.version}</td>              
+                                <td width="5%" valign="top" onclick="location.href = '${appBaseUrl}/${app.folderName}/${app.launchPath}'" valign="top"> ${app.version}</td>
                                 <td style="text-align: center">
                                     <c:choose>
                                         <c:when test="${allowAdmin}">
@@ -126,7 +126,7 @@ session.removeAttribute(WebConstants.OPENMRS_ERROR_ATTR);
                             </tr>
 
                         </c:forEach>
-                    </tbody>    
+                    </tbody>
                 </table>
             </div>
         </c:otherwise>

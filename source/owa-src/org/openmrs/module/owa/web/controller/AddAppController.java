@@ -1,6 +1,6 @@
 package org.openmrs.module.owa.web.controller;
 
-/* 
+/*
  * Copyright (c) 2004-2014, University of Oslo
  * All rights reserved.
  *
@@ -54,21 +54,21 @@ import org.springframework.web.multipart.MultipartFile;
  */
 @Controller
 public class AddAppController {
-	
+
 	private static final Log log = LogFactory.getLog(AddAppController.class);
-	
+
 	@Autowired
 	private MessageSourceService messageSourceService;
-	
+
 	@Autowired
 	private AppManager appManager;
-	
+
 	private String message;
-	
+
 	@RequestMapping(value = "/module/owa/addApp.htm", method = RequestMethod.POST)
         public String upload(@RequestParam("file") MultipartFile file, HttpServletRequest request) throws IOException {
                 if(Context.hasPrivilege("Manage OWA")){
-                        HttpSession session = request.getSession();		
+                        HttpSession session = request.getSession();
                         if (!file.isEmpty()) {
                             String fileName = file.getOriginalFilename();
                             if (file.getSize() > 32L * 1024 * 1024) {
@@ -76,12 +76,12 @@ public class AddAppController {
                                 return "redirect:manage.form";
                             }
                             File uploadedFile = File.createTempFile("owa-upload-", ".zip");
-                            file.transferTo(uploadedFile);            
-                                try (ZipFile zip = new ZipFile(uploadedFile)){                                	
+                            file.transferTo(uploadedFile);
+                                try (ZipFile zip = new ZipFile(uploadedFile)){
                                     if(zip.size() == 0){
                                         message = messageSourceService.getMessage("owa.blank_zip");
-                                        log.warn("Zip file is empty");       
-                                        session.setAttribute(WebConstants.OPENMRS_ERROR_ATTR, message); 
+                                        log.warn("Zip file is empty");
+                                        session.setAttribute(WebConstants.OPENMRS_ERROR_ATTR, message);
                                         return "redirect:manage.form";
                                         }
                                     ZipEntry entry = zip.getEntry("manifest.webapp");
@@ -90,29 +90,29 @@ public class AddAppController {
                                         log.warn("Manifest file could not be found in app");
                                         uploadedFile.delete();
                                         session.setAttribute(WebConstants.OPENMRS_ERROR_ATTR, message);
-                                    } 
-                                    else {                                    	
-                                    	message = appManager.extractMissingRequirementsMessage(uploadedFile, appManager.getStartedModules());
-                                    	if (!("".equals(message))) {
-                                    		
-                                    		//display error message for owa apps that need requirements first installed
-                                    		message = messageSourceService.getMessage("owa.missing_app_requirements") + message;
-                                    		log.warn(message);
-                                    		session.setAttribute(WebConstants.OPENMRS_MSG_ATTR, message);
-                                    	}else {
-                                    		
-                                    		//for owa apps that do not need any requirements
+                                    }
+                                    else {
+                                        message = appManager.extractMissingRequirementsMessage(uploadedFile, appManager.getStartedModules());
+                                        if (!("".equals(message))) {
+
+                                            //display error message for owa apps that need requirements first installed
+                                            message = messageSourceService.getMessage("owa.missing_app_requirements") + message;
+                                            log.warn(message);
+                                            session.setAttribute(WebConstants.OPENMRS_MSG_ATTR, message);
+                                        }else {
+
+                                            //for owa apps that do not need any requirements
 	                                        String contextPath = request.getScheme() + "://" + request.getServerName() + ":"
 	                                                + request.getServerPort() + request.getContextPath();
 	                                        appManager.installApp(uploadedFile, fileName, contextPath);
 	                                        message = messageSourceService.getMessage("owa.app_installed");
 	                                        session.setAttribute(WebConstants.OPENMRS_MSG_ATTR, message);
-                                    	}
+                                        }
                                     }
                                 }
                                 catch(Exception e) {
-                                    message = e.getMessage();                                    	
-                                        log.warn(message);                                        
+                                    message = e.getMessage();
+                                        log.warn(message);
                                     uploadedFile.delete();
                                     session.setAttribute(WebConstants.OPENMRS_ERROR_ATTR, message);
                                     return "redirect:manage.form";

@@ -60,36 +60,36 @@ import java.util.List;
 import java.lang.StringBuilder;
 
 public class DefaultAppManager implements AppManager {
-	
+
 	private static final Log log = LogFactory.getLog(DefaultAppManager.class);
-	
+
 	@Autowired(required = false)
 	private List<OwaListener> owaListeners;
-	
+
 	/**
 	 * In-memory singleton list holding state for apps.
 	 */
 	private List<App> apps = new ArrayList();
-	
+
 	private void init() {
 		reloadApps();
 	}
-	
+
 	public void setOwaListeners(List<OwaListener> owaListeners) {
 		this.owaListeners = owaListeners;
 	}
-	
+
 	@Override
 	public List<App> getApps() {
 		String baseUrl = getAppBaseUrl();
-		
+
 		for (App app : apps) {
 			app.setBaseUrl(baseUrl);
 		}
-		
+
 		return apps;
 	}
-	
+
 
     @Override
     public void installApp(File file, String fileName, String rootPath) throws IOException {
@@ -203,7 +203,7 @@ public class DefaultAppManager implements AppManager {
 		}
 		return false;
 	}
-	
+
 	@Override
 	public App getAppByName(String appName) {
 		for (App app : getApps()) {
@@ -213,7 +213,7 @@ public class DefaultAppManager implements AppManager {
 		}
 		return null;
 	}
-	
+
 	@Override
 	public boolean deleteApp(String name) {
 		for (App app : getApps()) {
@@ -242,22 +242,22 @@ public class DefaultAppManager implements AppManager {
 				}
 			}
 		}
-		
+
 		return false;
 	}
-	
+
 	@Override
 	public String getAppFolderPath() {
 		String appFolderPath = Context.getAdministrationService().getGlobalProperty(KEY_APP_FOLDER_PATH);
-		
+
 		File folder = new File(appFolderPath);
 		if (!folder.exists()) {
 			setAppFolderPath(appFolderPath); // If the global property is set, make sure the folder exists
 		}
-		
+
 		return appFolderPath;
 	}
-	
+
 	@Override
 	public void setAppFolderPath(String appFolderPath) {
 		if (!appFolderPath.isEmpty()) {
@@ -273,31 +273,31 @@ public class DefaultAppManager implements AppManager {
 		}
 		Context.getAdministrationService().saveGlobalProperty(new GlobalProperty(KEY_APP_FOLDER_PATH, appFolderPath));
 	}
-	
+
 	@Override
 	public String getAppBaseUrl() {
 		return Context.getAdministrationService().getGlobalProperty(KEY_APP_BASE_URL);
 	}
-	
+
 	@Override
 	public void setAppBaseUrl(String appBaseUrl) {
 		Context.getAdministrationService().saveGlobalProperty(new GlobalProperty(KEY_APP_BASE_URL, appBaseUrl));
 	}
-	
+
 	@Override
 	public String getAppStoreUrl() {
 		return Context.getAdministrationService().getGlobalProperty(KEY_APP_STORE_URL, DEFAULT_APP_STORE_URL);
 	}
-	
+
 	@Override
 	public void setAppStoreUrl(String appStoreUrl) {
 		Context.getAdministrationService().saveGlobalProperty(new GlobalProperty(KEY_APP_STORE_URL, appStoreUrl));
 	}
-	
+
 	// -------------------------------------------------------------------------
 	// Supportive methods
 	// -------------------------------------------------------------------------
-	
+
 	/**
 	 * Sets the list of apps with detected apps from the file system.
 	 */
@@ -347,40 +347,40 @@ public class DefaultAppManager implements AppManager {
 			}
 		}
 	}
-	
+
 	/**
 	 * Returns String message of missing requirements and empty String if all the requirements are
 	 * installed or if no special requirements are needed.
-	 * 
+     *
 	 * @param file uploaded file of owa that contains Manifest.webapp entry
 	 * @param startedModules list of started modules
 	 * @return message about missing requirements
 	 */
 	public String extractMissingRequirementsMessage(File file, List<Module> startedModules) throws IOException {
-		
+
 		StringBuilder errorMessage = new StringBuilder("");
-		
+
 		App app = getAppDefinition(file);
 		AppRequirements appRequirements = null;
-		
+
 		if (null != app.getActivities().getOpenmrs().getRequirements()) {
 			appRequirements = app.getActivities().getOpenmrs().getRequirements();
-			
+
 			if (null != appRequirements.getCoreVersion()) {
 				if (!ModuleUtil.matchRequiredVersions(OpenmrsConstants.OPENMRS_VERSION_SHORT,
 				    appRequirements.getCoreVersion())) {
-					
+
 					errorMessage.append("OpenMRS-core version: ").append(appRequirements.getCoreVersion());
 				}
 			}
-			
+
 			if (null != appRequirements.getRequiredModules()) {
 				for (AppRequiredModule requiredModule : appRequirements.getRequiredModules()) {
 					boolean moduleStarted = false;
 					String reqVersion = requiredModule.getVersion();
 					for (Module module : startedModules) {
 						if (module.getPackageName().equals(requiredModule.getName())) {
-							
+
 							if (reqVersion != null && ModuleUtil.matchRequiredVersions(module.getVersion(), reqVersion)) {
 								moduleStarted = true;
 							}
@@ -399,34 +399,34 @@ public class DefaultAppManager implements AppManager {
 		}
 		return errorMessage.toString();
 	}
-	
+
 	@Override
 	public List<Module> getStartedModules() {
 		List startedModules = new ArrayList(ModuleFactory.getStartedModules());
 		return startedModules;
 	}
-	
+
 	/**
 	 * Returns App app definition from file
-	 * 
+     *
 	 * @param file zip file of owa that contains Manifest.webapp entry
 	 * @return App extracted from the manifest.webapp file
 	 */
-	
+
 	private static App getAppDefinition(File file) throws IOException {
 
-		App app = null;    		
-		ObjectMapper mapper = new ObjectMapper();     
-		mapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);		
-		
+        App app = null;
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
 		try (ZipFile zipFile = new ZipFile(file)) {
 			ZipArchiveEntry entry = zipFile.getEntry("manifest.webapp");
-			
-			try (InputStream inputStream = zipFile.getInputStream(entry)) { 
+
+            try (InputStream inputStream = zipFile.getInputStream(entry)) {
 				String manifest = org.apache.commons.io.IOUtils.toString(inputStream);
 				app = mapper.readValue(manifest, App.class);
-				
-			}		
+
+            }
 		}
 		return app;
 	}
