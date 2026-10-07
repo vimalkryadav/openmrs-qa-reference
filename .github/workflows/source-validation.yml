@@ -9,6 +9,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
@@ -21,5 +23,15 @@ jobs:
         run: |
           for script in tests/*.sh; do bash -n "$script"; done
           for script in tests/*.mjs; do node --check "$script"; done
-      - name: Check whitespace
-        run: git show --format= --check HEAD
+      - name: Check changed-line whitespace
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ -n "$PR_BASE" ]; then
+            change_range="$PR_BASE...$PR_HEAD"
+          else
+            change_range="HEAD^...HEAD"
+          fi
+          git diff --check "$change_range" -- . ':!*.patch'
+          python3 scripts/check-patch-whitespace.py "$change_range"
