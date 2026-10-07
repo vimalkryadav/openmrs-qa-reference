@@ -1,0 +1,70 @@
+{
+  "verified": "2026-10-08",
+  "headless": true,
+  "scope": "O3 subscription configuration supplement to the 25 offline OCL/OWA flows per app",
+  "commands": [
+    "node tests/headless-ocl-configuration.mjs reference",
+    "node tests/headless-ocl-configuration.mjs clone"
+  ],
+  "flows": [
+    {
+      "id": "OCL-C01",
+      "name": "Required and malformed fields reject without writes, then recover",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OCL-C02",
+      "name": "Cancel edits preserves stored values and resets inputs",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OCL-C03",
+      "name": "Edit URL token and validation flags survives hard reload",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OCL-C04",
+      "name": "Offline policy stays active with a saved subscription",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OCL-C05",
+      "name": "Exact settings restored; local upload/history and no outbound activity verified",
+      "reference": "passed",
+      "clone": "passed"
+    }
+  ],
+  "restoration": {
+    "reference": {
+      "exactPropertyRowsRestored": true,
+      "importUUIDsUnchanged": true,
+      "itemCount": 35440,
+      "propertyCount": 7
+    },
+    "clone": {
+      "exactPropertyRowsRestored": true,
+      "importUUIDsUnchanged": true,
+      "itemCount": 35440,
+      "propertyCount": 7
+    }
+  },
+  "externalBrowserRequests": {
+    "reference": [],
+    "clone": []
+  },
+  "pageErrors": {
+    "reference": [],
+    "clone": []
+  },
+  "limits": [
+    "No live Unsubscribe; it deletes import history.",
+    "No outbound remote OCL execution; guards remain enabled.",
+    "Initial attempts exposed test selector and native global-property cache cleanup issues; corrected runs are authoritative.",
+    "Configuration edits use synthetic example.invalid URLs and a synthetic token; original settings are restored through native service/cache invalidation plus guarded exact row restoration.",
+    "Screenshots were inspected and removed after the proof; compact ledgers and native HTML/accessibility evidence are retained."
+  ]
+}

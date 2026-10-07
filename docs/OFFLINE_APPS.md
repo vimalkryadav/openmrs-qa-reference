@@ -33,10 +33,21 @@ node tests/headless-owa-offline.mjs clone
 
 The Java script directly tests OCL REST/client/scheduler guards and OWA manager install/replacement/deletion plus seven malformed archives; it does not rely solely on browser interception. Clone focused coverage is `backend/tests/test_ocl_subscription_import.py`, `backend/tests/test_legacy_owa_admin.py` (28 passes) and `scripts/test_owa_middleware.mjs` (16 passes). The latter verifies legacy-route isolation when the OWA backend fails, mutable DB-driven prefixes, deleted-app 404s and resolver-failure 502s.
 
-Full screenshots, raw results and cleanup ledgers are under ignored `test-results/{ocl,owa}-offline/{reference,clone}/`. The tracked compact ledger has no clinical records or developer-local filesystem paths. If a browser run fails, inspect its owned UUIDs/settings ledger before retrying; do not unsubscribe to clean fixtures, because stock OCL erases all import history. Cleanup only removes captured UUIDs absent from the source seed. OWA deletion uses its own package identity and preserves shipped apps.
+Raw results and cleanup ledgers are under ignored `test-results/{ocl,owa}-offline/{reference,clone}/`. Screenshots are temporary inspection artifacts and are removed after review. The tracked compact ledger has no clinical records or developer-local filesystem paths. If a browser run fails, inspect its owned UUIDs/settings ledger before retrying; do not unsubscribe to clean fixtures, because stock OCL erases all import history. Cleanup only removes captured UUIDs absent from the source seed. OWA deletion uses its own package identity and preserves shipped apps.
 
 ## Final data state
 
 Both applications retain 24 original OCL imports and 35,440 import items. Owned concepts, mappings, import rows and installed packages were removed; both shipped OWAs remain. OWA settings were restored, including the original NULL base URL after stock settings submission normalized it to `/owa`. The Downloads seed was untouched. No additional containers were created.
 
 The shared seed has 1,377 concepts. The reference retains two required attachment compatibility concepts, `42ed45fd-f3f6-44b6-bfc2-8bde1bb41e00` and `7cac8397-53cd-4f00-a6fe-028e8d743f8e`, for 1,379 concepts total. The earlier QA312 concept was removed separately after explicit authorization and a dependency audit: exactly its concept, name and mapping rows were absent from the seed. The guarded transaction preserved both compatibility concepts and all other key/UUID sets; `test-results/concept-reconciliation/{rollback,apply}.json` contains the recovery and validation ledger. None of these three concepts was created by the OCL flows. Local-flow proof compares the same imported UUIDs and verifies its cleanup independently.
+
+## Configuration round-trip supplement
+
+The [configuration ledger](ocl-configuration-results.json) adds five paired headless groups: required URL/token and malformed URL recovery; Cancel without writes; edited URL/token/snapshot/validation flags surviving hard reload; offline import rejection with unchanged history; and exact settings restoration with local upload/history still available. Both applications passed all five groups with no page errors or external browser request attempts. The original 24 imports and 35,440 items were unchanged.
+
+```sh
+node tests/headless-ocl-configuration.mjs reference
+node tests/headless-ocl-configuration.mjs clone
+```
+
+The helper snapshots all OCL property identities, values and descriptions before mutation, then restores only the seven subscription settings. Native restoration first uses the normal global-property service so its cache observes the restored values; direct SQL alone leaves stale cached configuration. Guarded row restoration removes only newly created fixture settings and verifies the complete snapshot. It never invokes Unsubscribe. A rerun deliberately refuses to overwrite an existing snapshot: verify restoration, archive the previous ignored result directory, then start a new run.
