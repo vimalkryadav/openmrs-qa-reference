@@ -83,7 +83,8 @@ public class ReportDesignFormController {
     	design.setProperties(props);
     	
     	MultipartHttpServletRequest mpr = (MultipartHttpServletRequest) request;
-    	Map<String, MultipartFile> files = (Map<String, MultipartFile>)mpr.getFileMap();
+		// Legacy UI delegates getMultiFileMap, but its inherited getFileMap is uninitialized.
+		Map<String, MultipartFile> files = mpr.getMultiFileMap().toSingleValueMap();
     	Set<String> foundResources = new HashSet<String>();
     	for (String paramName : files.keySet()) {
     		try {

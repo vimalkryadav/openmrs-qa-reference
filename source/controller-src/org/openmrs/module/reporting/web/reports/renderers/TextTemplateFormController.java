@@ -356,6 +356,7 @@ public class TextTemplateFormController {
 					previewResult = (out.toByteArray() != null ? new String(out.toByteArray(), "UTF-8") : "");
 					StringUtils.deleteWhitespace(previewResult);
 					model.addAttribute("previewResult", previewResult);
+                    model.addAttribute("previewComplete", errorDetails == null);
 					model.addAttribute("design", design);
 					model.addAttribute("errorDetails", errorDetails);
 					

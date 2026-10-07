@@ -33,3 +33,22 @@ Status: **reproduced, root cause not yet established**. After an initial 7/9 run
 ## Source provenance
 
 Reporting overrides start from the pinned Reporting 2.1.0 source in `versions.lock.json`. The sticker override starts from pinned Patient Documents 1.1.0. Original license headers are retained. Native compilation uses the just-compiled API classes before controller compilation so the preview renderer API and controller remain consistent.
+
+## Editor and renderer follow-up batch
+
+The first batch source commit is `9b5de34`. The next local commit extends the same branch; no source has been pushed. Runtime proof uses the existing native 8090 server.
+
+| Audit ID | Repair | Evidence and remaining limits |
+| --- | --- | --- |
+| B-02 | Creation accepts the blank optional specification index already emitted by Add Indicator. | Headless create, reload and one-patient count pass. |
+| B-03 | Add Iteration accepts its unused blank optional index. | Headless two iterations persist and evaluate 7 and 8. |
+| A-05 / C-3 | MappedEditor decodes the legacy XSS wrapper's HTML transport encoding before XML deserialization; raw XML entities are preserved. | Two focused transport tests; real chooser adds and persists patient row filter, and legacy Run with selected mapped cohort completes with one-row Gender CSV. The successful paired manifestations establish the common transport cause. |
+| B-05 | New Static reporting queries own their metadata and use serialized-definition storage while referring to an existing clinical cohort. Legacy cohort-backed definitions remain readable. Editing a legacy alias in the annotated editor creates independent reporting metadata; clinical cohort writes/purges are rejected through this reporting persister. | Three focused identity-isolation assertions. Headless create/reopen/rename/delete passes. Complete selected cohort metadata and member-ID snapshots are byte-identical before/after. No clinical rows were changed. |
+| A-10 | Generic resource upload uses the multipart wrapper's delegated multi-file map instead of its uninitialized inherited single-file map. | Source compiled; paired actual upload/reopen/run proof is coordinated with the clone renderer suite. A redirect alone is not the proof. |
+| A-12 | Text renderer rejects missing design/template with a readable RenderingException. | Focused missing-template assertion passes; run-error UI follow-up remains separate. |
+| B-06 follow-up | Preview displays its error as escaped text with an alert role, renders empty successful output, and uses a plain read-only result textarea instead of invoking unloaded CodeMirror. | Updated 9/9 headless suite proves empty/valid/malformed preview and saved-state behavior. No page errors; only the expected malformed-SQL HTTP400 appears in the event log. |
+| New metadata correction | CohortDetail's workbook bytes are XLSX; filename and MIME now match, while the existing `:xls` mode argument stays usable. HTML metadata is unchanged. | Focused workbook/HTML MIME assertions pass; paired workbook decoding is coordinated with the clone suite. |
+
+`tests/headless-editors.mjs` passes all five editor paths on fresh fixtures. Its output is `test-results/editors/browser-results.json`; `cohort-before.tsv` and `cohort-after.tsv` prove the existing clinical cohort was preserved. `tests/cleanup-editors.py` confirms zero owned definition/design/request UUID and prefix residuals. The updated focused Java suite passes 40 assertions. The rerun first-batch fixtures are also cleaned with zero recorded residual counts. Earlier exploratory selector/timing failures remain under ignored evidence and are not counted as application failures.
+
+The direct patient-dataset preview intentionally samples the first 50 active patients before applying filters. A valid filter selecting a patient outside that sample therefore gives an empty preview; the verification fixture uses the first active patient and separately runs a full one-patient report. This is a preview scope limit, not evidence that later patient records are absent from the database.

@@ -111,7 +111,13 @@ public class TextTemplateRenderer extends ReportTemplateRenderer {
 		Writer pw = new OutputStreamWriter(out, "UTF-8");
 		
 		try {
-			ReportDesignResource reportDesignResource = getTemplate(reportDesign);
+			if (reportDesign == null) {
+                throw new RenderingException("The selected report design no longer exists");
+            }
+            ReportDesignResource reportDesignResource = getTemplate(reportDesign);
+            if (reportDesignResource == null || reportDesignResource.getContents() == null) {
+                throw new RenderingException("A template resource is required");
+            }
 			String templateContents = new String(reportDesignResource.getContents(), "UTF-8");
 			Map<String, Object> replacements = getBaseReplacementData(reportData, reportDesign);
 	

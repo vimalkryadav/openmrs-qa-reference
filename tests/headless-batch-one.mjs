@@ -110,7 +110,7 @@ await check('iterable-sql-empty-and-invalid', async () => {
   await sql('SELECT 7 AS qa_value UNION ALL SELECT 9 AS qa_value'); return { empty, invalid };
 });
 const textEditor = base + '/reports/renderers/textTemplateReportRenderer.form?reportDefinitionUuid=' + ids.textReport + '&type=org.openmrs.module.reporting.report.renderer.TextTemplateRenderer&successUrl=/module/reporting/reports/manageReportDesigns.form';
-async function setScript(value) { await page.frameLocator('#textarea-container iframe').locator('body').click(); await page.keyboard.press('ControlOrMeta+A'); await page.keyboard.type(value); }
+async function setScript(value) { await page.frameLocator('#textarea-container iframe').locator('body').click(); await page.keyboard.press('ControlOrMeta+A'); await page.keyboard.press('Backspace'); if (value) await page.keyboard.type(value); }
 await check('text-preview-never-saves-and-submit-does', async () => {
   await page.goto(textEditor + (ids.textDesign ? '&reportDesignUuid=' + ids.textDesign : '')); await page.locator('#name').fill(prefix + ' Text'); await page.locator('[name=scriptType]').selectOption('Velocity'); await setScript('SAVED $data.get("result.qa_value.1")'); await page.locator('#submitButton').click(); await page.waitForURL('**/manageReportDesigns.form*');
   const design = (await json(rest + '/reportDesign?reportDefinitionUuid=' + ids.textReport + '&v=full')).results.find(d => d.name === prefix + ' Text'); ids.textDesign = design.uuid; fs.writeFileSync(path.join(out, 'ref-ids.json'), JSON.stringify(ids, null, 2));
@@ -119,7 +119,8 @@ await check('text-preview-never-saves-and-submit-does', async () => {
   const preview = page.frameLocator('#previewFrame'); await preview.locator('input[type=submit][value=Preview]').click();
   await expect(preview.locator('#templateResult')).toHaveValue('UNSAVED 7');
   await page.goto(editor); await expect(page.locator('[name=script]')).toHaveValue('SAVED $data.get("result.qa_value.1")');
-  await setScript('#if($broken'); await page.getByText('PREVIEW', { exact: true }).first().click(); await preview.locator('input[type=submit][value=Preview]').click(); await expect(preview.locator('ps\\:exception')).toHaveAttribute('exception', /Unable to compile Velocity template/);
+  await setScript(''); await page.getByText('PREVIEW', { exact: true }).first().click(); await preview.locator('input[type=submit][value=Preview]').click(); await expect(preview.locator('#templateResult')).toHaveValue(''); await page.goto(editor); await expect(page.locator('[name=script]')).toHaveValue('SAVED $data.get("result.qa_value.1")');
+  await setScript('#if($broken'); await page.getByText('PREVIEW', { exact: true }).first().click(); await preview.locator('input[type=submit][value=Preview]').click(); await expect(preview.locator('[role=alert]')).toContainText('Unable to compile Velocity template');
   await page.goto(editor); await expect(page.locator('[name=script]')).toHaveValue('SAVED $data.get("result.qa_value.1")');
   await setScript('SUBMITTED $data.get("result.qa_value.1")'); await page.locator('#submitButton').click(); await page.waitForURL('**/manageReportDesigns.form*'); await page.goto(editor); await expect(page.locator('[name=script]')).toHaveValue('SUBMITTED $data.get("result.qa_value.1")'); return { design: design.uuid };
 });

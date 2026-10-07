@@ -56,6 +56,19 @@ public class EditAnnotatedDefinitionController {
     			throw new IllegalArgumentException("Unable to create definition instance of type " + type);
     		}
     	}
+        if (d instanceof org.openmrs.module.reporting.cohort.definition.StaticCohortDefinition) {
+            org.openmrs.module.reporting.cohort.definition.StaticCohortDefinition existing =
+                    (org.openmrs.module.reporting.cohort.definition.StaticCohortDefinition) d;
+            if (!existing.isIndependentMetadata()) {
+                // The annotated editor owns reporting metadata, never the referenced clinical cohort.
+                org.openmrs.module.reporting.cohort.definition.StaticCohortDefinition query =
+                        new org.openmrs.module.reporting.cohort.definition.StaticCohortDefinition();
+                query.setCohort(existing.getCohort());
+                query.setName(existing.getName());
+                query.setDescription(existing.getDescription());
+                d = query;
+            }
+        }
 		return d;
     }
 	

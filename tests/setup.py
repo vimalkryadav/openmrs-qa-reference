@@ -51,3 +51,14 @@ if __name__=='__main__':
   s.post('module/reporting/reports/renderers/saveNonConfigurableReportRenderer.form',{'name':'QA Reports final headless CSV','reportDefinition':s.ids['row'],'rendererType':'org.openmrs.module.reporting.report.renderer.CsvReportRenderer','successUrl':'manageReportDesigns.form'})
   data=s.get('ws/rest/v1/reportingrest/reportDesign',params={'reportDefinitionUuid':s.ids['row'],'v':'full'},headers={'Accept':'application/json'}).json()
   s.remember('csvDesign',next(x['uuid'] for x in data['results'] if x['name']=='QA Reports final headless CSV'))
+
+
+def read_reference_sql(query):
+    """Read-only test evidence from the existing MariaDB dependency; never start it."""
+    import subprocess
+    config_path = Path(__file__).resolve().parents[1] / '.native/data/openmrs-runtime.properties'
+    config = dict(line.split('=', 1) for line in config_path.read_text().splitlines() if '=' in line and not line.startswith('#'))
+    if not query.lstrip().upper().startswith('SELECT '):
+        raise ValueError('Read-only SELECT required')
+    result = subprocess.run(['docker', 'exec', '-i', 'openmrs-qa-db-1', 'sh', '-c', 'IFS= read -r MYSQL_PWD; export MYSQL_PWD; mariadb -u "$1" openmrs -N -e "$2"', 'sh', config['connection.username'], query], input=config['connection.password']+'\n', text=True, capture_output=True, check=True)
+    return result.stdout

@@ -199,6 +199,35 @@ public class ReferenceBatchRegression {
 
     public static void main(String[] args) throws Exception {
         iterableSql(); preview(); stickers();
+        org.openmrs.Cohort clinical = new org.openmrs.Cohort();
+        clinical.setCohortId(321); clinical.setUuid("clinical-owned-test"); clinical.setName("Clinical cohort");
+        clinical.addMember(7);
+        org.openmrs.module.reporting.cohort.definition.StaticCohortDefinition query = new org.openmrs.module.reporting.cohort.definition.StaticCohortDefinition();
+        query.setCohort(clinical); query.setName("Reporting label"); query.setUuid("query-owned-test"); query.setId(22);
+        if (!clinical.getName().equals("Clinical cohort") || clinical.getCohortId() != 321 || !clinical.getUuid().equals("clinical-owned-test") || clinical.getSize() != 1) throw new AssertionError("Query metadata mutated cohort");
+        if (!query.getName().equals("Reporting label") || !query.getUuid().equals("query-owned-test") || query.getId() != 22) throw new AssertionError("Independent query metadata missing");
+        checks += 2;
+        org.openmrs.module.reporting.cohort.definition.StaticCohortDefinition legacy = new org.openmrs.module.reporting.cohort.definition.StaticCohortDefinition(clinical);
+        if (legacy.isIndependentMetadata() || !legacy.getUuid().equals(clinical.getUuid())) throw new AssertionError("Legacy reference identity changed");
+        checks++;
+        org.openmrs.module.reporting.report.renderer.TextTemplateRenderer textRenderer = new org.openmrs.module.reporting.report.renderer.TextTemplateRenderer();
+        try { textRenderer.renderWithDesign(new ReportData(), new org.openmrs.module.reporting.report.ReportDesign(), new java.io.ByteArrayOutputStream()); throw new AssertionError("Missing template accepted"); }
+        catch (org.openmrs.module.reporting.report.renderer.RenderingException expected) { if (!expected.getMessage().contains("A template resource is required")) throw expected; checks++; }
+        org.openmrs.module.reporting.report.renderer.CohortDetailReportRenderer detailRenderer = new org.openmrs.module.reporting.report.renderer.CohortDetailReportRenderer();
+        org.openmrs.api.context.Context.setUserContext(new org.openmrs.api.context.UserContext(null));
+        org.openmrs.module.reporting.report.ReportRequest detailRequest = new org.openmrs.module.reporting.report.ReportRequest();
+        detailRequest.setRenderingMode(new org.openmrs.module.reporting.report.renderer.RenderingMode(detailRenderer, "Workbook", "owned:xls", 1));
+        if (!detailRenderer.getRenderedContentType(detailRequest).equals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")) throw new AssertionError("CohortDetail workbook MIME");
+        checks++;
+        detailRequest.setRenderingMode(new org.openmrs.module.reporting.report.renderer.RenderingMode(detailRenderer, "HTML", "owned:html", 1));
+        if (!detailRenderer.getRenderedContentType(detailRequest).equals("text/html")) throw new AssertionError("CohortDetail HTML MIME");
+        checks++;
+        String raw = "<mapped><string>A &amp; B</string></mapped>";
+        String escaped = org.apache.commons.lang.StringEscapeUtils.escapeHtml(raw);
+        if (!raw.equals(org.openmrs.module.reporting.propertyeditor.MappedEditor.decodeTransportXml(escaped))) throw new AssertionError("transport decode");
+        checks++;
+        if (!raw.equals(org.openmrs.module.reporting.propertyeditor.MappedEditor.decodeTransportXml(raw))) throw new AssertionError("raw XML entities changed");
+        checks++;
         LoggingReportProcessor processor = new LoggingReportProcessor();
         Report saved = new Report(); saved.setRenderedOutput(new byte[]{1, 2});
         processor.process(saved, new Properties()); checks++;
