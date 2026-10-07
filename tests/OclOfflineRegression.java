@@ -35,6 +35,14 @@ public class OclOfflineRegression {
         catch (org.openmrs.module.webservices.rest.web.response.IllegalRequestException expected) {
             if (!expected.getMessage().contains("Remote OCL imports are disabled")) throw expected;
         }
+        for (String invalidUrl : new String[] {"", "/QAConfig/not-a-url", "not a URL", "unknown:resource"}) {
+            Subscription invalid = new Subscription(); invalid.setUrl(invalidUrl); invalid.setToken("owned-test-token");
+            try { new org.openmrs.module.openconceptlab.web.rest.resources.SubscriptionResource().save(invalid); throw new AssertionError("Invalid URL accepted"); }
+            catch (org.openmrs.module.webservices.rest.web.response.IllegalRequestException expected) { /* Must reject before any Context/database access. */ }
+        }
+        Subscription noToken = new Subscription(); noToken.setUrl("https://example.invalid/orgs/QAConfig/collections/Offline"); noToken.setToken(" ");
+        try { new org.openmrs.module.openconceptlab.web.rest.resources.SubscriptionResource().save(noToken); throw new AssertionError("Blank token accepted"); }
+        catch (org.openmrs.module.webservices.rest.web.response.IllegalRequestException expected) { /* No database mutation. */ }
         final int[] saved = {0};
         UpdateScheduler scheduler = new UpdateScheduler();
         scheduler.setImportService((ImportService) Proxy.newProxyInstance(
@@ -51,6 +59,6 @@ public class OclOfflineRegression {
         Subscription sub = new Subscription(); sub.setDays(1); sub.setHours(0); sub.setMinutes(0);
         scheduler.schedule(sub);
         if (saved[0] != 1) throw new AssertionError("Local settings not saved");
-        System.out.println("PASS: REST guard, direct importer network sentinel, scheduler sentinel, local settings persistence");
+        System.out.println("PASS: REST guard, direct importer network sentinel, scheduler sentinel, local settings persistence, five pre-mutation subscription validation cases");
     }
 }

@@ -12,7 +12,7 @@ Uploaded applications are executable web content; the module does not rewrite ar
 
 ## Source ownership
 
-- OCL 3.1.0: `source/ocl-src/` importer and scheduler; `source/ocl-web-src/` REST resource. `prepare-backend.py` patches and repacks the embedded OCL OWA as well as extracting its served files, so activation cannot reinstall the original remote-enabled copy.
+- OCL 3.1.0: `source/ocl-src/` importer and scheduler; `source/ocl-web-src/` REST resources, including pre-mutation subscription URL/token validation. `prepare-backend.py` patches and repacks the embedded OCL OWA as well as extracting its served files, so activation cannot reinstall the original remote-enabled copy.
 - OWA 1.15.0: `source/owa-src/` manager, upload controller, remote controller, servlet and filter; `source/owa-web/manage.jsp` upload validation, offline notice and accessible action labels.
 - O3 4.4.0: tracked `patches/esm-admin-tools-v4.4.0.patch`. Both Reports and OCL are compiled into content-addressed local distributions and the import map is published after both directories exist. Backend preparation preserves a previously compiled frontend import map.
 - Exact upstream commits are pinned in `versions.lock.json`; copyright and license notices are retained. The editable source and packaging recipe are committed, while compiled outputs remain ignored.
@@ -51,3 +51,7 @@ node tests/headless-ocl-configuration.mjs clone
 ```
 
 The helper snapshots all OCL property identities, values and descriptions before mutation, then restores only the seven subscription settings. Native restoration first uses the normal global-property service so its cache observes the restored values; direct SQL alone leaves stale cached configuration. Guarded row restoration removes only newly created fixture settings and verifies the complete snapshot. It never invokes Unsubscribe. A rerun deliberately refuses to overwrite an existing snapshot: verify restoration, archive the previous ignored result directory, then start a new run.
+
+The separate Angular OWA configuration form is exercised with `node tests/headless-ocl-configuration.mjs reference owa` and the same command with `clone`. This is distinct from the O3 form: Cancel navigates home, advanced settings are initially collapsed, and malformed URL errors come from REST. The reference resource now validates with the stock Java URL parser before the scheduler writes settings, returning a controlled 400 for malformed input instead of the former 500. The existing clone already returned 400. The Java regression asserts five invalid URL/token cases reject before any database/service access. No network lookup is performed by this validation.
+
+The final separate OWA supplement passed six groups per application, including the visible invalid-URL error, retained input and successful correction. Together the O3 and OWA configuration supplements contain 11 paired groups in `ocl-configuration-results.json`; they supplement, rather than replace, the original 25 offline application flows per app. Both exact settings snapshots and the original import history were restored, with no page errors or external browser request attempts.

@@ -66,5 +66,78 @@
     "Initial attempts exposed test selector and native global-property cache cleanup issues; corrected runs are authoritative.",
     "Configuration edits use synthetic example.invalid URLs and a synthetic token; original settings are restored through native service/cache invalidation plus guarded exact row restoration.",
     "Screenshots were inspected and removed after the proof; compact ledgers and native HTML/accessibility evidence are retained."
-  ]
+  ],
+  "owa": {
+    "surface": "Separate Angular OWA subscription form",
+    "commands": [
+      "node tests/headless-ocl-configuration.mjs reference owa",
+      "node tests/headless-ocl-configuration.mjs clone owa"
+    ],
+    "flows": [
+      {
+        "id": "OWA-C01",
+        "name": "Required fields block saving and corrected configuration survives reload",
+        "reference": "passed",
+        "clone": "passed"
+      },
+      {
+        "id": "OWA-C02",
+        "name": "Cancel navigates home without persisting unsaved edits",
+        "reference": "passed",
+        "clone": "passed"
+      },
+      {
+        "id": "OWA-C03",
+        "name": "Edited values and advanced flags persist after reload",
+        "reference": "passed",
+        "clone": "passed"
+      },
+      {
+        "id": "OWA-C04",
+        "name": "Saved subscription leaves remote disabled and local upload/history available",
+        "reference": "passed",
+        "clone": "passed"
+      },
+      {
+        "id": "OWA-C06",
+        "name": "Malformed URL rejects without persistence and can be corrected",
+        "reference": "passed",
+        "clone": "passed"
+      },
+      {
+        "id": "OWA-C05",
+        "name": "Exact settings restored; local upload/history and no outbound activity verified",
+        "reference": "passed",
+        "clone": "passed"
+      }
+    ],
+    "restoration": {
+      "reference": {
+        "exactPropertyRowsRestored": true,
+        "importUUIDsUnchanged": true,
+        "itemCount": 35440,
+        "propertyCount": 7
+      },
+      "clone": {
+        "exactPropertyRowsRestored": true,
+        "importUUIDsUnchanged": true,
+        "itemCount": 35440,
+        "propertyCount": 7
+      }
+    },
+    "externalBrowserRequests": {
+      "reference": [],
+      "clone": []
+    },
+    "pageErrors": {
+      "reference": [],
+      "clone": []
+    },
+    "fixedReferenceIssue": "Malformed URL previously returned500 without changing the saved subscription. SubscriptionResource now rejects before scheduler/persistence with400; the form retains input, displays Wrongurladdress and accepts correction. Clone already returned400.",
+    "limits": [
+      "Unsubscribe deliberately not invoked: it deletes import history.",
+      "Initial restoration proof needed an actual browser reload; navigating the existing hash does not reload cached client state.",
+      "Original pre-fix500 evidence remains in ignored reference-before-guard result directory."
+    ]
+  }
 }

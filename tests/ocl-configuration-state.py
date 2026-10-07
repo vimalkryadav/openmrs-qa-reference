@@ -11,7 +11,9 @@ if not __debug__:
 root = Path(__file__).resolve().parents[1]
 target, action = sys.argv[1:3]
 assert target in ('reference', 'clone') and action in ('snapshot', 'restore', 'check')
-output = root / 'test-results/ocl-configuration' / target
+surface = sys.argv[3] if len(sys.argv)>3 else 'o3'
+assert surface in ('o3','owa')
+output = root / ('test-results/ocl-configuration-owa' if surface=='owa' else 'test-results/ocl-configuration') / target
 output.mkdir(parents=True, exist_ok=True)
 allowed = {'openconceptlab.'+name for name in ('subscriptionUuid','subscriptionUrl','token','validationType','scheduledDays','scheduledTime','subscribedToSnapshot')}
 if target == 'reference':
