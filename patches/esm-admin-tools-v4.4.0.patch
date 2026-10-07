@@ -797,7 +797,7 @@ index 1eb8402..389bed6 100644
      };
 diff --git a/packages/esm-reports-app/src/components/structured-parameter.tsx b/packages/esm-reports-app/src/components/structured-parameter.tsx
 new file mode 100644
-index 0000000..c54e925
+index 0000000..46cb5a7
 --- /dev/null
 +++ b/packages/esm-reports-app/src/components/structured-parameter.tsx
 @@ -0,0 +1,68 @@
@@ -862,12 +862,12 @@ index 0000000..c54e925
 +  parameter: ParameterShape; value: unknown; onChange: (value: string) => void;
 +}> = ({ parameter, value, onChange }) => {
 +  const error = structuredError(value, parameter.type);
-+  return <TextArea id={parameter.name} name={parameter.name} labelText={parameter.label || parameter.name}
++  return <div style={{textAlign: 'left', width: '100%'}}><TextArea id={parameter.name} name={parameter.name} labelText={parameter.label || parameter.name}
 +    rows={6} value={structuredText(value)} onChange={(event) => onChange(event.target.value)}
 +    helperText={parameter.type.endsWith('.SortCriteria')
 +      ? 'JSON sort rules: [{"column":"ID","direction":"DESC"}]. Directions: ASC or DESC. Use [] for no sorting.'
 +      : 'JSON columns: [{"name":"ID","uuid":"<saved-definition-uuid>","mappings":{},"converters":[]}]. Use unique names, saved definition UUIDs and typed parameter mappings; [] means no columns.'}
-+    invalid={!!error} invalidText={error} />;
++    invalid={!!error} invalidText={error} /></div>;
 +};
 diff --git a/packages/esm-reports-app/src/types/report-request.ts b/packages/esm-reports-app/src/types/report-request.ts
 index 14c78f3..77d86d9 100644
