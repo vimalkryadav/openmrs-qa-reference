@@ -10,7 +10,7 @@ import time
 import zipfile
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
-NATIVE = ROOT / '.native'
+NATIVE = (ROOT / '.native').resolve()
 CONFIG = json.loads((ROOT / 'dev/config.json').read_text())
 
 def prefix(name):
@@ -40,9 +40,13 @@ def overlay():
     frontend = ROOT / '.build/frontend'
     if (frontend / 'reports-dist/openmrs-esm-reports-app.js').exists():
         imports = json.loads((frontend / 'importmap.json').read_text())
-        reports = imports['imports']['@openmrs/esm-reports-app']
-        target = NATIVE / 'frontend' / reports.split('/openmrs/spa/')[-1].lstrip('/')
-        shutil.copytree(frontend / 'reports-dist', target.parent, dirs_exist_ok=True)
+        for package, folder in [('@openmrs/esm-reports-app', 'reports-dist'),
+                                ('@openmrs/esm-openconceptlab-app', 'ocl-dist')]:
+            if not (frontend / folder).exists():
+                continue
+            url = imports["imports"][package]
+            target = NATIVE / 'frontend' / url.split('/openmrs/spa/')[-1].lstrip('/')
+            shutil.copytree(frontend / folder, target.parent, dirs_exist_ok=True)
         shutil.copy2(frontend / 'importmap.json', NATIVE / 'frontend/importmap.json')
 
 def configure():
@@ -135,8 +139,10 @@ def stop():
     for record in json.loads(path.read_text()):
         pid = record['pid']
         command = subprocess.run(['ps', '-p', str(pid), '-o', 'command='], capture_output=True, text=True).stdout
-        if str(NATIVE) not in command:
+        if not command.strip():
             continue
+        if str(NATIVE) not in command and str(ROOT / '.native') not in command:
+            raise RuntimeError(f'Process {pid} does not match this native runtime; retaining manifest')
         os.kill(pid, signal.SIGTERM)
         for _ in range(30):
             try:
@@ -151,6 +157,10 @@ def stop():
 def start():
     if (NATIVE / 'processes.json').exists():
         raise RuntimeError('Native process file exists; use stop then start to avoid duplicate processes')
+    for port in [CONFIG['port'], CONFIG['tomcat_port'], CONFIG['frontend_port']]:
+        listeners = subprocess.run(['lsof', '-nP', '-iTCP:' + str(port), '-sTCP:LISTEN'], capture_output=True, text=True)
+        if listeners.returncode == 0:
+            raise RuntimeError(f'Port {port} already has a listener; refusing a duplicate native server')
     configure()
     nginx = prefix('nginx') / 'bin/nginx'
     subprocess.run([str(nginx), '-t', '-c', str(NATIVE / 'nginx.conf'), '-p', str(NATIVE)], check=True)

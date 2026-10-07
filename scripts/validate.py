@@ -19,6 +19,10 @@ workflow = (root / '.github/workflows/manual-release.yml').read_text()
 assert re.search(r'^on:\n  workflow_dispatch:', workflow, re.M)
 assert not re.search(r'^\s*(push|pull_request|schedule|repository_dispatch|workflow_run):', workflow, re.M)
 assert 'if: inputs.publish' in workflow and 'default: false' in workflow
+source_workflow = (root / '.github/workflows/source-validation.yml').read_text()
+assert re.search(r'^on:\n  pull_request:', source_workflow, re.M)
+assert not re.search(r'\b(docker|depot|buildx|aws|ecr|publish)\b', source_workflow, re.I)
+assert 'python3 scripts/validate.py' in source_workflow
 prohibited = {'.db', '.sqlite', '.jar', '.omod', '.class', '.zip', '.tar', '.gz'}
 for folder in ['source', 'patches', 'docker', 'scripts', 'docs', 'tests', 'licenses', 'dev']:
     for path in (root / folder).rglob('*'):
@@ -27,4 +31,4 @@ for folder in ['source', 'patches', 'docker', 'scripts', 'docs', 'tests', 'licen
             assert 'node_modules' not in path.parts, path
             data = path.read_bytes()
             assert (b'/' + b'Users/') not in data and (b'/private/' + b'tmp/') not in data, path
-print('PASS Python/Bash syntax, immutable source/image pins, manual-only workflow, portable source files and prohibited-artifact checks')
+print('PASS Python/Bash syntax, immutable source/image pins, manual-only image release and source-only PR workflow, portable source files and prohibited-artifact checks')
