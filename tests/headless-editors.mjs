@@ -1,7 +1,7 @@
 import { chromium, expect } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
-const out=path.resolve('test-results/editors'), ids=JSON.parse(fs.readFileSync(out+'/ref-ids.json'));
+const out=path.resolve((process.env.REPORTS_EVIDENCE||'test-results/editors')), ids=JSON.parse(fs.readFileSync(out+'/ref-ids.json'));
 const base='/openmrs/module/reporting', results=[], events=[];
 const browser=await chromium.launch({headless:true});
 const context=await browser.newContext({baseURL:'http://localhost:8090',httpCredentials:{username:'admin',password:'Admin123'},timezoneId:'UTC',viewport:{width:1440,height:1000}});

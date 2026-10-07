@@ -1,10 +1,11 @@
 """Delete only captured R3 request/design/definition UUIDs and verify no residuals."""
+import os
 import json
 import re
 from pathlib import Path
 import setup
-setup.ROOT=Path(__file__).resolve().parents[1]/'test-results/objects'
-s=setup.Site('ref',8090);prefix='QA Reports Fix R3 20261008'
+setup.ROOT=Path(__file__).resolve().parents[1]/os.environ.get('REPORTS_OBJECT_EVIDENCE',os.environ.get('REPORTS_EVIDENCE','test-results/objects'))
+s=setup.Site('ref',8090);prefix=os.environ.get('REPORTS_OBJECT_PREFIX','QA Reports Fix R3 20261008')
 kinds={'obsReport':'report.definition.ReportDefinition','visitReport':'report.definition.ReportDefinition','encounterReport':'report.definition.ReportDefinition','metadataReport':'report.definition.ReportDefinition','obs':'dataset.definition.ObsDataSetDefinition','visit':'dataset.definition.VisitDataSetDefinition','encounter':'dataset.definition.EncounterAndObsDataSetDefinition','scalar':'dataset.definition.SqlDataSetDefinition','obsFilter':'query.obs.definition.SqlObsQuery','visitFilter':'query.visit.definition.AllVisitQuery','visitTypedFilter':'query.visit.definition.BasicVisitQuery','encounterFilter':'query.encounter.definition.SqlEncounterQuery','obsId':'data.obs.definition.ObsIdDataDefinition','visitId':'data.visit.definition.VisitIdDataDefinition','encounterId':'data.encounter.definition.EncounterIdDataDefinition','age':'data.person.definition.AgeDataDefinition','gender':'data.person.definition.GenderDataDefinition','cohort':'cohort.definition.SqlCohortDefinition'}
 ledger={'definitions':[],'designs':[],'resources':[],'requests':s.ids.get('requests',[])}
 def valid(uuid):

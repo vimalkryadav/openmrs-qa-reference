@@ -1,7 +1,7 @@
 import {chromium,expect} from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
-const out=path.resolve('test-results/objects'), ids=JSON.parse(fs.readFileSync(out+'/ref-ids.json')), expected=JSON.parse(fs.readFileSync(out+'/expected.json'));
+const out=path.resolve((process.env.REPORTS_EVIDENCE||'test-results/objects')), ids=JSON.parse(fs.readFileSync(out+'/ref-ids.json')), expected=JSON.parse(fs.readFileSync(out+'/expected.json'));
 const base='/openmrs/module/reporting',parent='org.openmrs.module.reporting.dataset.definition.DataSetDefinition',prefix='QA Reports Fix R3 20261008';
 const results=[],events=[];
 const browser=await chromium.launch({headless:true});

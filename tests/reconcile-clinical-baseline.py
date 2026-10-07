@@ -16,6 +16,9 @@ import sys
 
 import pymysql
 
+if not __debug__:
+    raise RuntimeError('Run reconciliation without Python optimization; all safety checks are mandatory')
+
 ROOT = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=Path, required=True)
@@ -132,15 +135,38 @@ def key_check(table, expected_extra):
     print(table, result['seedRows'], 'seed keys verified', flush=True)
     return result
 
+def native_key_check(table, excluded):
+    """Metadata may have intentional compatibility additions; preserve their exact keys."""
+    fields=primary[table][:]
+    if any(c['column_name']=='uuid' for c in columns[table]) and 'uuid' not in fields:
+        fields.append('uuid')
+    digest=hashlib.sha256();count=0
+    projection=','.join(map(safe,fields));order=','.join(map(safe,primary[table]))
+    with connection.cursor(pymysql.cursors.SSCursor) as cursor:
+        cursor.execute('SELECT '+projection+' FROM '+safe(table)+' ORDER BY '+order)
+        for row in cursor:
+            if tuple(row[:len(primary[table])]) in excluded:
+                continue
+            digest.update(json.dumps(row,separators=(',',':'),default=str).encode());count+=1
+    return {'preservedNativeRows':count,'sha256':digest.hexdigest()}
+
+
 try:
     assert query('SELECT @@foreign_key_checks AS value')[0]['value'] == 1
-    roots = {'person': [r['uuid'] for r in evidence['people']],
-             'encounter': [r['uuid'] for r in evidence['encounters']],
-             'visit': [r['uuid'] for r in evidence['visits'] if not r['inSeed']]}
-    assert {t: len(v) for t, v in roots.items()} == {'person': 8, 'encounter': 3, 'visit': 1}
-    additional = evidence.get('additionalRoots', {})
-    assert set(additional) <= {'patientflags_patient_flag'}
-    roots.update(additional)
+    concept_fixture=evidence.get('conceptFixture')
+    if concept_fixture:
+        assert set(concept_fixture)=={'uuid','expectedName','compatibilityUuids'}
+        roots={'concept':[concept_fixture['uuid']]}
+        assert query('SELECT name FROM concept_name WHERE concept_id=(SELECT concept_id FROM concept WHERE uuid=%s)',(concept_fixture['uuid'],)) == [{'name':concept_fixture['expectedName']}]
+        ledger['scope']='Reviewed concept fixture only; preserve unrelated native metadata additions'
+    else:
+        roots = {'person': [r['uuid'] for r in evidence['people']],
+                 'encounter': [r['uuid'] for r in evidence['encounters']],
+                 'visit': [r['uuid'] for r in evidence['visits'] if not r['inSeed']]}
+        assert {t: len(v) for t, v in roots.items()} == {'person': 8, 'encounter': 3, 'visit': 1}
+        additional = evidence.get('additionalRoots', {})
+        assert set(additional) <= {'patientflags_patient_flag'}
+        roots.update(additional)
     for table, uuids in roots.items():
         found = query('SELECT * FROM ' + safe(table) + ' WHERE uuid IN (' + ','.join(['%s'] * len(uuids)) + ')' + suffix, uuids)
         assert {r['uuid'] for r in found} == set(uuids), ('Reviewed roots changed', table)
@@ -152,7 +178,7 @@ try:
     # Some modules omit formal FKs; conventional references must be covered too.
     conventional = {'person_id': 'person', 'patient_id': 'patient', 'encounter_id': 'encounter',
                     'visit_id': 'visit', 'obs_id': 'obs', 'patient_appointment_id': 'patient_appointment',
-                    'appointment_id': 'patient_appointment'}
+                    'appointment_id': 'patient_appointment', 'concept_id': 'concept', 'value_coded': 'concept'}
     declared = {(c['table_name'], c['column_name']) for group in constraints.values() for c in group}
     for table, metadata in columns.items():
         for column in metadata:
@@ -175,12 +201,18 @@ try:
     persist()
     for table in tables:
         extras = {pk for t, pk in rows if t == table}
-        ledger['keyChecks'][table] = key_check(table, extras)
+        ledger['keyChecks'][table] = native_key_check(table, extras) if concept_fixture else key_check(table, extras)
         persist()
     # These shared baseline parents must survive byte-for-byte in the native database.
     parents = {'person': query('SELECT * FROM person WHERE person_id=1392354'),
                'patient': query('SELECT * FROM patient WHERE patient_id=1392354'),
                'visit': query('SELECT * FROM visit WHERE visit_id=125047')}
+    if concept_fixture:
+        parents['compatibilityConcepts']=query('SELECT * FROM concept WHERE uuid IN ('+','.join(['%s']*len(concept_fixture['compatibilityUuids']))+') ORDER BY concept_id',concept_fixture['compatibilityUuids'])
+        assert len(parents['compatibilityConcepts'])==len(concept_fixture['compatibilityUuids'])
+        # UUID references in bounded serialized metadata are not formal FKs.
+        assert not query('SELECT uuid FROM serialized_object WHERE serialized_data LIKE %s',('%'+concept_fixture['uuid']+'%',))
+        assert not query('SELECT property FROM global_property WHERE property_value LIKE %s',('%'+concept_fixture['uuid']+'%',))
     ledger['preservedParentsBefore'] = parents
     order, visiting, visited = [], set(), set()
     def visit(key):
@@ -205,11 +237,15 @@ try:
         after = {'person': query('SELECT * FROM person WHERE person_id=1392354'),
                  'patient': query('SELECT * FROM patient WHERE patient_id=1392354'),
                  'visit': query('SELECT * FROM visit WHERE visit_id=125047')}
-        assert parents == after, 'Seed parent fields changed'
+        if concept_fixture:
+            after['compatibilityConcepts']=query('SELECT * FROM concept WHERE uuid IN ('+','.join(['%s']*len(concept_fixture['compatibilityUuids']))+') ORDER BY concept_id',concept_fixture['compatibilityUuids'])
+        assert parents == after, 'Seed or compatibility parent fields changed'
         ledger['preservedParentsIdentical'] = True
         ledger['finalKeyChecks'] = {}
         for table in tables:
-            ledger['finalKeyChecks'][table] = key_check(table, set())
+            ledger['finalKeyChecks'][table] = native_key_check(table,set()) if concept_fixture else key_check(table,set())
+            if concept_fixture:
+                assert ledger['finalKeyChecks'][table]==ledger['keyChecks'][table],('Unrelated metadata key changed',table)
         if args.apply:
             connection.commit(); ledger['committed'] = True
         else:

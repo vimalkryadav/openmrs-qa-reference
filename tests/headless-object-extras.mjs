@@ -2,7 +2,7 @@ import {chromium,expect} from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
-const out=path.resolve('test-results/objects'),ids=JSON.parse(fs.readFileSync(out+'/ref-ids.json')),base='/openmrs/module/reporting',results=[],events=[],prefix='QA Reports Fix R3 20261008';
+const out=path.resolve((process.env.REPORTS_EVIDENCE||'test-results/objects')),ids=JSON.parse(fs.readFileSync(out+'/ref-ids.json')),base='/openmrs/module/reporting',results=[],events=[],prefix='QA Reports Fix R3 20261008';
 const browser=await chromium.launch({headless:true}),context=await browser.newContext({baseURL:'http://localhost:8090',httpCredentials:{username:'admin',password:'Admin123'},timezoneId:'UTC',viewport:{width:1550,height:1100}}),p=await context.newPage();p.setDefaultTimeout(15000);p.on('pageerror',e=>events.push({message:e.message}));p.on('dialog',d=>d.accept());
 const persist=()=>fs.writeFileSync(out+'/ref-ids.json',JSON.stringify(ids,null,2));
 async function check(name,fn){if(process.env.CASE&&!name.includes(process.env.CASE))return;const row={name};try{row.detail=await fn();row.status='pass';}catch(e){row.status='fail';row.error=e.message;}await p.screenshot({path:out+'/'+name+'.png',fullPage:true});fs.writeFileSync(out+'/'+name+'.html',await p.content());fs.writeFileSync(out+'/'+name+'.aria.yml',await p.locator('body').ariaSnapshot());results.push(row);fs.writeFileSync(out+'/extras-results.json',JSON.stringify({results,events},null,2));console.log(row.status,name,row.error?.slice(0,300)||'');}

@@ -1,7 +1,8 @@
 """Minimal owned fixtures for recoverable legacy form validation."""
+import os
 from pathlib import Path
 import setup
-setup.ROOT=Path(__file__).resolve().parents[1]/'test-results/form-errors';setup.ROOT.mkdir(parents=True,exist_ok=True)
+setup.ROOT=Path(__file__).resolve().parents[1]/os.environ.get('REPORTS_EVIDENCE','test-results/form-errors');setup.ROOT.mkdir(parents=True,exist_ok=True)
 setup.PREFIX='QA Reports Fix R6 20261008';s=setup.Site('ref',8090)
 cohort=s.create('cohort','cohort.definition.SqlCohortDefinition','cohorts/sqlCohortDefinition.form')
 s.post('module/reporting/cohorts/sqlCohortDefinitionAssignQueryString.form',{'uuid':cohort,'queryString':'SELECT patient_id FROM patient WHERE patient_id=-1'})

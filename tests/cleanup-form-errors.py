@@ -1,8 +1,9 @@
 """Remove exact R6 fixtures after the UI correction proof."""
+import os
 from pathlib import Path
 import json
 import setup
-setup.ROOT=Path(__file__).resolve().parents[1]/'test-results/form-errors'
+setup.ROOT=Path(__file__).resolve().parents[1]/os.environ.get('REPORTS_EVIDENCE','test-results/form-errors')
 s=setup.Site('ref',8090)
 s.post('module/reporting/reports/deleteReportProcessor.form',{'uuid':s.ids['processor']})
 for key,kind in [('dimension','indicator.dimension.CohortDefinitionDimension'),('logic','dataset.definition.LogicDataSetDefinition'),('cohort','cohort.definition.SqlCohortDefinition')]:

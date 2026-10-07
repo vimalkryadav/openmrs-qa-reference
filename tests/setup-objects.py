@@ -1,10 +1,11 @@
 """Bounded reusable definitions for object dataset UI regressions."""
 from pathlib import Path
+import os
 import json
 import setup
-setup.ROOT = Path(__file__).resolve().parents[1] / 'test-results/objects'
+setup.ROOT = Path(__file__).resolve().parents[1] / os.environ.get('REPORTS_OBJECT_EVIDENCE',os.environ.get('REPORTS_EVIDENCE','test-results/objects'))
 setup.ROOT.mkdir(parents=True, exist_ok=True)
-setup.PREFIX = 'QA Reports Fix R3 20261008'
+setup.PREFIX = os.environ.get('REPORTS_OBJECT_PREFIX','QA Reports Fix R3 20261008')
 s = setup.Site('ref',8090)
 patient = int(setup.read_reference_sql('SELECT v.patient_id FROM visit v JOIN encounter e ON e.visit_id=v.visit_id AND e.voided=0 JOIN obs o ON o.encounter_id=e.encounter_id AND o.voided=0 JOIN patient p ON p.patient_id=v.patient_id AND p.voided=0 WHERE v.voided=0 ORDER BY v.visit_id,e.encounter_id,o.obs_id LIMIT 1').strip())
 s.remember('patient',patient)

@@ -1,7 +1,8 @@
 """Own two-row definitions for the edited-dataset regression."""
+import os
 from pathlib import Path
 import setup
-setup.ROOT = Path(__file__).resolve().parents[1] / 'test-results/live-update'
+setup.ROOT = Path(__file__).resolve().parents[1] / os.environ.get('REPORTS_EVIDENCE','test-results/live-update')
 setup.ROOT.mkdir(parents=True, exist_ok=True)
 setup.PREFIX = 'QA Reports Fix R5 20261008'
 s = setup.Site('ref', 8090)

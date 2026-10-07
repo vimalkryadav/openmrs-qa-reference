@@ -183,6 +183,12 @@ public final class RowObjectDefinitionEditor {
     private static Object parseValue(Object input, Class<?> type) {
         if (input == null) return null;
         Object value;
+        if (Date.class.isAssignableFrom(type)) {
+            if (input instanceof Date) return input;
+            java.text.DateFormat format=input.toString().matches("\\d{4}-\\d{2}-\\d{2}")
+                ? new java.text.SimpleDateFormat("yyyy-MM-dd") : org.openmrs.api.context.Context.getDateFormat();
+            return ReportInputValidation.parseDate(input.toString(),format);
+        }
         // htmlwidgets has no registered handler for some metadata, including VisitType.
         if (org.openmrs.OpenmrsObject.class.isAssignableFrom(type)) {
             value = org.openmrs.api.context.Context.getService(org.openmrs.module.htmlwidgets.service.HtmlWidgetsService.class).getObject((Class)type,Integer.valueOf(input.toString()));

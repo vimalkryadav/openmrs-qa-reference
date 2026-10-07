@@ -1,9 +1,10 @@
 """Assert generated XLSX bytes and header-toggle cell semantics without Excel."""
+import os
 from pathlib import Path
 import json
 import zipfile
 import xml.etree.ElementTree as ET
-root=Path(__file__).resolve().parents[1]/'test-results/objects'
+root=Path(__file__).resolve().parents[1]/os.environ.get('REPORTS_EVIDENCE','test-results/objects')
 ns={'x':'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
 def cells(name):
     with zipfile.ZipFile(root/(name+'.xlsx')) as z:

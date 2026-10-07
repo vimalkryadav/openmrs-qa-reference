@@ -1,9 +1,10 @@
 """Remove the exact editor-suite fixtures and verify dependency rows are gone."""
+import os
 import json
 import re
 from pathlib import Path
 import setup
-setup.ROOT = Path(__file__).resolve().parents[1] / 'test-results/editors'
+setup.ROOT = Path(__file__).resolve().parents[1] / os.environ.get('REPORTS_EVIDENCE','test-results/editors')
 s = setup.Site('ref', 8090)
 prefix = 'QA Reports Fix R2 20261008'
 report = s.ids['report']

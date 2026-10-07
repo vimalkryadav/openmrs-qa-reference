@@ -1,7 +1,7 @@
 import { chromium, expect } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
-const out = path.resolve('test-results/batch-one');
+const out = path.resolve((process.env.REPORTS_EVIDENCE||'test-results/batch-one'));
 const ids = JSON.parse(fs.readFileSync(path.join(out, 'ref-ids.json')));
 const prefix = 'QA Reports Fix R1 20261008';
 const base = '/openmrs/module/reporting';

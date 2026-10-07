@@ -268,6 +268,31 @@ public class ReferenceBatchRegression {
         restriction.setUuid("other");
         check(!org.openmrs.module.reporting.web.util.ReportInputValidation.canProcess(detailRequest, config), "different design rejected");
         check(!org.openmrs.module.reporting.web.util.ReportInputValidation.canProcess(null, config), "missing request rejected");
+        org.openmrs.module.reporting.dataset.definition.ObsDataSetDefinition runtimeObs = new org.openmrs.module.reporting.dataset.definition.ObsDataSetDefinition();
+        runtimeObs.addParameter(new org.openmrs.module.reporting.evaluation.parameter.Parameter("columnDefinitions", "Columns", org.openmrs.module.reporting.dataset.column.definition.RowPerObjectColumnDefinition.class, java.util.List.class, null));
+        runtimeObs.addParameter(new org.openmrs.module.reporting.evaluation.parameter.Parameter("sortCriteria", "Sorting", org.openmrs.module.reporting.common.SortCriteria.class));
+        check(org.openmrs.module.reporting.web.util.StructuredReportParameters.targets(runtimeObs).size()==2,"direct native runtime fields resolved");
+        check(((java.util.List)org.openmrs.module.reporting.web.util.StructuredReportParameters.parse(runtimeObs,"columnDefinitions","[]")).isEmpty(),"empty structured columns parsed without mutation");
+        org.openmrs.module.reporting.common.SortCriteria runtimeSort=(org.openmrs.module.reporting.common.SortCriteria)org.openmrs.module.reporting.web.util.StructuredReportParameters.parse(runtimeObs,"sortCriteria","[{\"column\":\"Object ID\",\"direction\":\"DESC\"}]");
+        check(runtimeSort.getSortElements().get(0).getDirection()==org.openmrs.module.reporting.common.SortCriteria.SortDirection.DESC,"native sort direction parsed");
+        check(runtimeObs.getSortCriteria()==null,"runtime parsing leaves saved sort untouched");
+        try { org.openmrs.module.reporting.web.util.StructuredReportParameters.parse(runtimeObs,"sortCriteria","[{\"column\":\"Object ID\",\"direction\":\"SIDEWAYS\"}]"); throw new AssertionError("Invalid sort accepted"); }
+        catch (IllegalArgumentException expected) { checks++; }
+        ReportDefinition runtimeReport=new ReportDefinition();
+        runtimeReport.addParameter(new org.openmrs.module.reporting.evaluation.parameter.Parameter("columns", "Columns", org.openmrs.module.reporting.dataset.column.definition.RowPerObjectColumnDefinition.class, java.util.List.class, null));
+        Map<String,Object> runtimeMappings=new HashMap<String,Object>(); runtimeMappings.put("columnDefinitions","${columns}");
+        runtimeReport.addDataSetDefinition("obs",runtimeObs,runtimeMappings);
+        check(org.openmrs.module.reporting.web.util.StructuredReportParameters.targets(runtimeReport).containsKey("columns"),"mapped report alias resolves dataset field");
+        org.openmrs.module.reporting.dataset.definition.VisitDataSetDefinition runtimeVisit=new org.openmrs.module.reporting.dataset.definition.VisitDataSetDefinition();
+        runtimeVisit.addParameter(new org.openmrs.module.reporting.evaluation.parameter.Parameter("columnDefinitions", "Columns", org.openmrs.module.reporting.dataset.column.definition.RowPerObjectColumnDefinition.class, java.util.List.class, null));
+        runtimeReport.addDataSetDefinition("visit",runtimeVisit,runtimeMappings);
+        try { org.openmrs.module.reporting.web.util.StructuredReportParameters.targets(runtimeReport); throw new AssertionError("Incompatible shared runtime columns accepted"); }
+        catch (IllegalArgumentException expected) { checks++; }
+        Method mappedValue=org.openmrs.module.reporting.web.util.RowObjectDefinitionEditor.class.getDeclaredMethod("parseValue",Object.class,Class.class);
+        mappedValue.setAccessible(true);
+        check(mappedValue.invoke(null,"2026-09-29",java.util.Date.class) instanceof java.util.Date,"ISO mapped date resolves to native Date");
+        try { mappedValue.invoke(null,"2026-02-30",java.util.Date.class); throw new AssertionError("Impossible mapped date accepted"); }
+        catch (java.lang.reflect.InvocationTargetException expected) { check(expected.getCause() instanceof IllegalArgumentException,"impossible mapped date rejected"); }
         System.out.println("PASS " + checks + " focused reference assertions");
     }
 }

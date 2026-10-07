@@ -81,7 +81,15 @@ $j(document).ready(function() {
 										<label class="desc" for="${parameter.name}">${parameter.label}</label>
 										<div>
 											<c:choose>
-												<c:when test="${parameter.collectionType != null}">
+												<c:when test="${not empty structuredParameterError and (parameter.type.simpleName == 'RowPerObjectColumnDefinition' or parameter.type.simpleName == 'SortCriteria')}">
+                                                        <span class="error" role="alert"><c:out value="${structuredParameterError}"/></span>
+                                                    </c:when>
+                                                    <c:when test="${not empty structuredFields[parameter.name]}">
+                                                    <c:set var="structuredField" value="${structuredFields[parameter.name]}"/>
+                                                    <input type="hidden" id="${structuredField.id}" name="${parameter.name}"/>
+                                                    <div id="object-editor-${structuredField.id}"></div>
+                                                </c:when>
+                                                <c:when test="${parameter.collectionType != null}">
 													<wgt:widget id="${parameter.name}" name="${parameter.name}" type="${parameter.collectionType.name}" genericTypes="${parameter.type.name}" defaultValue="${evaluationContext.parameterValues[parameter.name]}" attributes="${parameter.widgetConfigurationAsString}"/>	
 												</c:when>
 												<c:otherwise>
@@ -113,3 +121,5 @@ $j(document).ready(function() {
 <c:if test="${model.dialog != 'false'}">
 <%@ include file="/WEB-INF/template/footerMinimal.jsp"%>
 </c:if>
+
+<%@ include file="structuredParameterScript.jsp" %>

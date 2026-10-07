@@ -19,7 +19,11 @@ def classes(folder):
 original=(ROOT/"backend-inputs/reporting-2.1.0.omod").read_bytes()
 with zipfile.ZipFile(io.BytesIO(original)) as archive:
     api=archive.read("lib/reporting-api-2.1.0.jar")
-replacements=classes("controller-classes")
+all_controller_classes=classes("controller-classes")
+rest_replacements={name:data for name,data in all_controller_classes.items() if name.startswith("org/openmrs/module/reportingrest/")}
+replacements={name:data for name,data in all_controller_classes.items() if name not in rest_replacements}
+rest_original=(ROOT/"backend-inputs/reportingrest-2.0.0.omod").read_bytes()
+(ROOT/"backend/reportingrest-2.0.0.omod").write_bytes(patched_zip(rest_original,rest_replacements))
 for folder in ("reporting-web", "web-overrides"):
     for page in (ROOT/folder).rglob("*.jsp"):
         replacements["web/module/"+page.relative_to(ROOT/folder).as_posix()]=page.read_bytes()
@@ -38,3 +42,17 @@ with zipfile.ZipFile(io.BytesIO(original)) as archive:
     name=next(n for n in archive.namelist() if n.endswith("patientdocuments-api-1.1.0.jar"))
     api=archive.read(name)
 (ROOT/"backend/patientdocuments-1.1.0.omod").write_bytes(patched_zip(original,{name:patched_zip(api,classes("patientdocuments-classes"))}))
+
+original=(ROOT/"backend-inputs/openconceptlab-3.1.0.omod").read_bytes()
+with zipfile.ZipFile(io.BytesIO(original)) as archive:
+    name=next(n for n in archive.namelist() if n.endswith("openconceptlab-api-3.1.0.jar"))
+    api=archive.read(name)
+replacements=classes("ocl-web-classes")
+replacements[name]=patched_zip(api,classes("ocl-classes"))
+(ROOT/"backend/openconceptlab-3.1.0.omod").write_bytes(patched_zip(original,replacements))
+
+original=(ROOT/"backend-inputs/owa-1.15.0.omod").read_bytes()
+replacements=classes("owa-classes")
+for page in (ROOT/"owa-web").rglob("*.jsp"):
+    replacements["web/module/"+page.relative_to(ROOT/"owa-web").as_posix()]=page.read_bytes()
+(ROOT/"backend/owa-1.15.0.omod").write_bytes(patched_zip(original,replacements))

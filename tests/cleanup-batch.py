@@ -1,4 +1,5 @@
 """Clean only batch-one UUIDs and verify no owned records remain."""
+import os
 import json
 import re
 import subprocess
@@ -6,7 +7,7 @@ from pathlib import Path
 import setup
 
 root = Path(__file__).resolve().parents[1]
-setup.ROOT = root / 'test-results/batch-one'
+setup.ROOT = root / os.environ.get('REPORTS_EVIDENCE','test-results/batch-one')
 s = setup.Site('ref', 8090)
 ids = s.ids
 prefix = 'QA Reports Fix R1 20261008'

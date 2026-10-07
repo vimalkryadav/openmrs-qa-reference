@@ -1,7 +1,7 @@
 import {chromium,expect} from '@playwright/test';
 import fs from 'node:fs';
 import {execFileSync} from 'node:child_process';
-const out='test-results/form-errors',ids=JSON.parse(fs.readFileSync(out+'/ref-ids.json')),base='/openmrs/module/reporting',prefix='QA Reports Fix R6 20261008';
+const out=(process.env.REPORTS_EVIDENCE||'test-results/form-errors'),ids=JSON.parse(fs.readFileSync(out+'/ref-ids.json')),base='/openmrs/module/reporting',prefix='QA Reports Fix R6 20261008';
 const db=q=>execFileSync('.venv/bin/python',['-c','import sys;sys.path.insert(0,"tests");import setup;print(setup.read_reference_sql(sys.argv[1]),end="")',q],{encoding:'utf8'});
 const definition=u=>db("SELECT serialized_data FROM serialized_object WHERE uuid='"+u+"'");
 const processor=()=>db("SELECT name,configuration,processor_mode FROM reporting_report_processor WHERE uuid='"+ids.processor+"'");

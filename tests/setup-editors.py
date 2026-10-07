@@ -1,8 +1,9 @@
 """Owned bounded fixtures for reference editor regression tests."""
+import os
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 import setup
-setup.ROOT = Path(__file__).resolve().parents[1] / 'test-results/editors'
+setup.ROOT = Path(__file__).resolve().parents[1] / os.environ.get('REPORTS_EVIDENCE','test-results/editors')
 setup.ROOT.mkdir(parents=True, exist_ok=True)
 setup.PREFIX = 'QA Reports Fix R2 20261008'
 s = setup.Site('ref', 8090)

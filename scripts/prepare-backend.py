@@ -41,10 +41,45 @@ def extract_dependencies():
     with zipfile.ZipFile(io.BytesIO(data)) as archive:
         archive.extractall(BUILD / 'backend/openconceptlab')
 
+def prepare_ocl_owa():
+    with zipfile.ZipFile(BUILD / 'backend-inputs/openconceptlab-3.1.0.omod') as archive:
+        data = archive.read('web/module/owas/openconceptlab.owa')
+    with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        archive.extractall(BUILD / 'backend/openconceptlab')
+    app = BUILD / 'backend/openconceptlab/app.bundle.min.js'
+    content = app.read_text()
+    replacements = {
+        'ng-show=vm.subscription>': 'ng-show=true>',
+        'ng-click=vm.startImportIfNoErrors()>': 'disabled ng-click=vm.startImportIfNoErrors()>',
+        '<div ng-show=!vm.subscription': '<div ng-show=false',
+        '<div ng-show=true>': '<p>Remote OCL imports are disabled in this environment. Import a local ZIP file containing export.json instead.</p><div ng-show=true>',
+    }
+    for old, new in replacements.items():
+        if content.count(old) != 1:
+            raise RuntimeError('OCL OWA source changed: ' + old)
+        content = content.replace(old, new)
+    content = content.replace('<a href="{{item.versionUrl }}">View in OCL</a>', '<span title="External OCL links are unavailable in this offline environment.">View in OCL (offline)</span>')
+    app.write_text(content)
+    # The activator redeploys this embedded OWA at startup, so patch it as well.
+    packaged = io.BytesIO()
+    with zipfile.ZipFile(packaged, 'w', zipfile.ZIP_DEFLATED) as archive:
+        for file in sorted((BUILD / 'backend/openconceptlab').rglob('*')):
+            if file.is_file():
+                archive.write(file, file.relative_to(BUILD / 'backend/openconceptlab').as_posix())
+    module = BUILD / 'backend/openconceptlab-3.1.0.omod'
+    temporary = module.with_suffix('.tmp')
+    with zipfile.ZipFile(module) as source, zipfile.ZipFile(temporary, 'w', zipfile.ZIP_DEFLATED) as target:
+        for entry in source.infolist():
+            target.writestr(entry, packaged.getvalue() if entry.filename == 'web/module/owas/openconceptlab.owa' else source.read(entry.filename))
+    temporary.replace(module)
+
+
 def main():
     BUILD.mkdir(exist_ok=True)
-    for name in ['backend', 'frontend']:
-        shutil.copytree(ROOT / 'docker' / name, BUILD / name, dirs_exist_ok=True)
+    shutil.copytree(ROOT / 'docker/backend', BUILD / 'backend', dirs_exist_ok=True)
+    # Backend rebuilds must not overwrite the compiled frontend's content-addressed map.
+    if not (BUILD / 'frontend/importmap.json').exists():
+        shutil.copytree(ROOT / 'docker/frontend', BUILD / 'frontend', dirs_exist_ok=True)
     for source in (ROOT / 'source').iterdir():
         link = BUILD / source.name
         if not link.exists():
@@ -58,7 +93,7 @@ def main():
     groups = [('backend-src', 'backend-classes'), ('controller-src', 'controller-classes'),
               ('core-src', 'core-classes'), ('legacyui-src', 'legacyui-classes'),
               ('patientdocuments-src', 'patientdocuments-classes'), ('cohort-src', 'cohort-classes'),
-              ('logic-source', 'logic-classes')]
+              ('logic-source', 'logic-classes'), ('ocl-src', 'ocl-classes'), ('ocl-web-src', 'ocl-web-classes'), ('owa-src', 'owa-classes')]
     # Mount repository root too, because .build source paths are symlinks into tracked source/.
     for folder, output in groups:
         paths = sorted(p for p in (ROOT / 'source' / folder).rglob('*.java') if '/src/test/' not in str(p))
@@ -83,6 +118,7 @@ def main():
         shutil.copy2(ROOT / 'scripts' / name, BUILD / name)
         run(sys.executable, str(BUILD / name))
     run(sys.executable, str(ROOT / 'scripts/package-cohort.py'))
+    prepare_ocl_owa()
     print('Compiled and packaged .build/backend. No Docker image was built or deployed.')
 
 if __name__ == '__main__':

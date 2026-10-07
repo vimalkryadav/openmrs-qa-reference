@@ -1,10 +1,11 @@
 """Create only owned, bounded reporting metadata for the native regression browser suite."""
+import os
 import json
 import re
 from pathlib import Path
 import setup
 
-setup.ROOT = Path(__file__).resolve().parents[1] / 'test-results/batch-one'
+setup.ROOT = Path(__file__).resolve().parents[1] / os.environ.get('REPORTS_EVIDENCE','test-results/batch-one')
 setup.ROOT.mkdir(parents=True, exist_ok=True)
 setup.PREFIX = 'QA Reports Fix R1 20261008'
 s = setup.Site('ref', 8090)

@@ -10,6 +10,7 @@
 package org.openmrs.module.reporting.web.reports;
 
 import java.util.Arrays;
+import org.openmrs.module.reporting.web.util.StructuredReportParameters;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -209,7 +210,9 @@ public class RunReportFormController extends SimpleFormController implements Val
                         if (StringUtils.hasText(expression))
                             value = expression;
                         else
-                            value = org.openmrs.module.reporting.web.util.ReportInputValidation.parse(value, parameter.getType(), parameter.getCollectionType());
+                            value = StructuredReportParameters.targets(reportDefinition).containsKey(parameter.getName())
+                                ? StructuredReportParameters.parse(reportDefinition,parameter.getName(),value)
+                                : org.openmrs.module.reporting.web.util.ReportInputValidation.parse(value, parameter.getType(), parameter.getCollectionType());
 
                         params.put(parameter.getName(), value);
                     }
@@ -218,6 +221,11 @@ public class RunReportFormController extends SimpleFormController implements Val
                     }
                 }
             }
+        }
+
+        if (!errors.hasErrors()) {
+            try { StructuredReportParameters.validate(reportDefinition,params); }
+            catch (IllegalArgumentException invalid) { errors.reject("reporting.invalidParameter",invalid.getMessage()); }
         }
 
         // Ensure that the chosen renderer is valid for this report
@@ -273,6 +281,12 @@ public class RunReportFormController extends SimpleFormController implements Val
             }
         }
         map.put( "inputsToToggle", inputsToToggle );
+        try { map.putAll(StructuredReportParameters.model(command.getReportDefinition(),command.getUserEnteredParams())); }
+        catch (IllegalArgumentException invalid) {
+            errors.reject("reporting.invalidParameter",invalid.getMessage());
+            map.put("structuredGroupsJson","[]");
+            map.put("structuredParameterError",invalid.getMessage());
+        }
         return map;
     }
 

@@ -1,8 +1,9 @@
 """Purge only exact R5 fixture UUIDs, then verify the ledger is empty."""
+import os
 from pathlib import Path
 import json
 import setup
-setup.ROOT=Path(__file__).resolve().parents[1]/'test-results/live-update'
+setup.ROOT=Path(__file__).resolve().parents[1]/os.environ.get('REPORTS_EVIDENCE','test-results/live-update')
 s=setup.Site('ref',8090)
 for uuid in s.ids.get('requests',[]):
     response=s.c.delete(s.path('ws/rest/v1/reportingrest/reportRequest/'+uuid))

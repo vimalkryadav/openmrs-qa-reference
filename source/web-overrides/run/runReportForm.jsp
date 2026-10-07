@@ -46,6 +46,9 @@ function toggleInputElements( idPrefix ){
                                     </c:if>
                                 </spring:bind>
 
+                                <spring:hasBindErrors name="report">
+                                    <c:forEach var="error" items="${errors.globalErrors}"><div class="error" role="alert"><c:out value="${error.defaultMessage}"/></div></c:forEach>
+                                </spring:hasBindErrors>
                                 <form method="post">
                                     <table style="padding:10px;">
                                         <c:forEach var="parameter" items="${report.reportDefinition.parameters}">
@@ -57,6 +60,14 @@ function toggleInputElements( idPrefix ){
                                                     <td><spring:message code="${parameter.label}"/>:</td>
                                                     <td>
                                                         <c:choose>
+                                                        <c:when test="${not empty structuredParameterError and (parameter.type.simpleName == 'RowPerObjectColumnDefinition' or parameter.type.simpleName == 'SortCriteria')}">
+                                                        <span class="error" role="alert"><c:out value="${structuredParameterError}"/></span>
+                                                    </c:when>
+                                                    <c:when test="${not empty structuredFields[parameter.name]}">
+                                                            <c:set var="structuredField" value="${structuredFields[parameter.name]}"/>
+                                                            <input type="hidden" id="${structuredField.id}" name="${status.expression}"/>
+                                                            <div id="object-editor-${structuredField.id}"></div>
+                                                        </c:when>
                                                         <c:when test="${parameter.type.name == 'java.util.Date' and not empty status.errorMessage}">
                                                             <input id="userEnteredParam${parameter.name}" name="${status.expression}" type="text"
                                                                 value="<c:out value='${status.value}'/>" aria-label="<c:out value='${parameter.label}'/>"
@@ -195,3 +206,5 @@ function toggleInputElements( idPrefix ){
     </div>
 </div>
 <%@ include file="/WEB-INF/template/footer.jsp"%>
+
+<%@ include file="../parameters/structuredParameterScript.jsp" %>

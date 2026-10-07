@@ -1,6 +1,6 @@
 import {chromium,expect} from '@playwright/test';
 import fs from 'node:fs';
-const out='test-results/live-update',ids=JSON.parse(fs.readFileSync(out+'/ref-ids.json'));
+const out=(process.env.REPORTS_EVIDENCE||'test-results/live-update'),ids=JSON.parse(fs.readFileSync(out+'/ref-ids.json'));
 const browser=await chromium.launch({headless:true}),context=await browser.newContext({baseURL:'http://localhost:8090',httpCredentials:{username:'admin',password:'Admin123'},timezoneId:'UTC'}),p=await context.newPage();
 const base='/openmrs/module/reporting',results=[];
 const persist=()=>fs.writeFileSync(out+'/ref-ids.json',JSON.stringify(ids,null,2));

@@ -125,3 +125,15 @@ Example invocation (reviewed evidence stays local and is not committed):
 .venv/bin/python tests/reconcile-clinical-baseline.py --seed "$SEED_DB" --evidence "$REVIEWED_TARGETS" --rollback
 .venv/bin/python tests/reconcile-clinical-baseline.py --seed "$SEED_DB" --evidence "$REVIEWED_TARGETS" --apply
 ```
+
+## Structured runtime columns and sorting
+
+Obs, Visit and Encounter-and-Obs datasets now accept whole column lists and sort criteria at legacy Preview and report Run. The same named row controls resolve saved definition UUIDs, typed mappings and converters. Runtime evaluation uses a copy, preserving the saved dataset. Report parameters can declare the two supported types through the actual parameter dialog; incompatible shared targets and invalid column/sort combinations fail before a request is queued. Other arbitrary structured Java types remain unsupported.
+
+Request mappings persist native values and expose bounded JSON DTOs through Reporting REST, allowing Copy and hard reload to restore them without Java object recursion. The Encounter-and-Obs evaluator copies its columns before adding its internal observation column, so this helper never contaminates copied requests. Date mappings accept strict ISO dates or the session date format.
+
+`test-results/runtime-parameters-release/results.json` records 13 passing headless cases across all three dataset families, actual parent-parameter creation and mapping, request/CSV/Copy roundtrips, sort-only input and invalid/empty cases. Cleanup verifies every owned definition, design and request UUID is absent. The focused Java regression has 63 assertions. These results establish the legacy workflow; O3 structured Run, request summary and scheduling coverage is being added separately.
+
+`tests/replay-reports.sh` runs the earlier focused suites with fresh evidence paths and exact cleanup between suites, preserving all original audit and repair captures. Its first replay caught a missing bounded-preview notice in the new parameter JSP; the existing patched JSP was retained as the sole template source and the notice restored before the final replay.
+
+The separately approved QA312 concept cleanup reused the guarded reconciliation script: three exact nonseed rows removed after a successful rollback rehearsal, with all remaining affected-table key/UUID sets unchanged. Both attachment compatibility concepts are preserved; details are recorded in `docs/OFFLINE_APPS.md`.
