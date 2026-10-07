@@ -1,5 +1,5 @@
 diff --git a/packages/esm-admin-openconceptlab-app/src/import/import.component.tsx b/packages/esm-admin-openconceptlab-app/src/import/import.component.tsx
-index 1c8cf80..056e8c6 100644
+index 1c8cf80..d8da092 100644
 --- a/packages/esm-admin-openconceptlab-app/src/import/import.component.tsx
 +++ b/packages/esm-admin-openconceptlab-app/src/import/import.component.tsx
 @@ -1,4 +1,5 @@
@@ -12,20 +12,29 @@ index 1c8cf80..056e8c6 100644
  import { useTranslation } from 'react-i18next';
  import { showNotification } from '@openmrs/esm-framework';
  import { startImportWithFile, startImportWithSubscription, useSubscription } from './import.resource';
-+import { getErrorMessage, PREVIOUS_IMPORTS_URL } from '../utils';
++import { getErrorMessage, PREVIOUS_IMPORTS_URL, OFFLINE_MESSAGE } from '../utils';
  import styles from './import.scss';
- 
+
  const allowedMimeTypes = ['application/zip', 'application/x-zip-compressed'];
- 
+
  const Import: React.FC = () => {
    const { t } = useTranslation();
 +  const { mutate } = useSWRConfig();
    const [isSubscriptionAvailable, setIsSubscriptionAvailable] = useState(false);
    const [file, setFile] = useState<File>();
    const [isFileUploading, setIsFileUploading] = useState(false);
+@@ -29,7 +32,7 @@ const Import: React.FC = () => {
+
+   useEffect(() => {
+     if (!isLoading && !error) {
+-      setIsSubscriptionAvailable(!!subscription);
++      setIsSubscriptionAvailable(false);
+     }
+   }, [isLoading, error, subscription]);
+
 @@ -66,21 +69,22 @@ const Import: React.FC = () => {
        }
- 
+
        const abortController = new AbortController();
 -      const response = await startImportWithSubscription(abortController);
 -
@@ -50,11 +59,11 @@ index 1c8cf80..056e8c6 100644
 -    [isSubscriptionAvailable, t],
 +    [isSubscriptionAvailable, t, mutate],
    );
- 
+
    const handleImportWithFile = useCallback(
 @@ -99,24 +103,25 @@ const Import: React.FC = () => {
        }
- 
+
        const abortController = new AbortController();
 -      const response = await startImportWithFile(file, abortController);
 -
@@ -84,8 +93,73 @@ index 1c8cf80..056e8c6 100644
 -    [file, t],
 +    [file, t, mutate],
    );
- 
+
    if (isLoading) {
+@@ -151,6 +156,7 @@ const Import: React.FC = () => {
+     <Grid className={styles.grid}>
+       <Column sm={4} md={8} lg={10}>
+         <Form onSubmit={handleImportWithSubscription}>
++          <p>{OFFLINE_MESSAGE}</p>
+           <h3 className={styles.productiveHeading03}>{t('importConcepts', 'Import Concepts')}</h3>
+           <p className={styles.formText}>
+             {t(
+diff --git a/packages/esm-admin-openconceptlab-app/src/previous-imports/import-overview/import-items.component.tsx b/packages/esm-admin-openconceptlab-app/src/previous-imports/import-overview/import-items.component.tsx
+index 48d71e6..dd3d205 100644
+--- a/packages/esm-admin-openconceptlab-app/src/previous-imports/import-overview/import-items.component.tsx
++++ b/packages/esm-admin-openconceptlab-app/src/previous-imports/import-overview/import-items.component.tsx
+@@ -2,7 +2,6 @@ import React, { Fragment, useCallback, useEffect, useState } from 'react';
+ import { useTranslation } from 'react-i18next';
+ import {
+   DataTableSkeleton,
+-  Link,
+   Pagination,
+   PaginationSkeleton,
+   Table,
+@@ -94,9 +93,9 @@ const ImportItems: React.FC<ImportItemsProps> = ({ importUuid }) => {
+               <Fragment key={row.uuid}>
+                 <TableRow className={styles.tableDataRow}>
+                   <TableCell>
+-                    <Link href={row.versionUrl}>
++                    <span title="External OCL links are unavailable in this offline environment.">
+                       {row.type} {row.uuid}
+-                    </Link>
++                    </span>
+                   </TableCell>
+                   <TableCell>{row.errorMessage}</TableCell>
+                 </TableRow>
+diff --git a/packages/esm-admin-openconceptlab-app/src/previous-imports/import-overview/import-overview.component.tsx b/packages/esm-admin-openconceptlab-app/src/previous-imports/import-overview/import-overview.component.tsx
+index 984864c..80132b8 100644
+--- a/packages/esm-admin-openconceptlab-app/src/previous-imports/import-overview/import-overview.component.tsx
++++ b/packages/esm-admin-openconceptlab-app/src/previous-imports/import-overview/import-overview.component.tsx
+@@ -20,7 +20,7 @@ const ImportOverview: React.FC<ImportOverviewProps> = ({ selectedImportObject })
+       <br />
+
+       <span className={styles.heading01}>{t('completedOn', 'Completed on')} </span>
+-      <span className="body">{formatDatetime(new Date(selectedImportObject.localDateStopped))}</span>
++      <span className="body">{selectedImportObject.localDateStopped ? formatDatetime(new Date(selectedImportObject.localDateStopped)) : 'Pending'}</span>
+       <br />
+
+       <span className={styles.heading01}>{t('duration', 'Duration')} </span>
+diff --git a/packages/esm-admin-openconceptlab-app/src/root.component.tsx b/packages/esm-admin-openconceptlab-app/src/root.component.tsx
+index aa88995..9d7f081 100644
+--- a/packages/esm-admin-openconceptlab-app/src/root.component.tsx
++++ b/packages/esm-admin-openconceptlab-app/src/root.component.tsx
+@@ -6,6 +6,7 @@ import Import from './import/import.component';
+ import PreviousImports from './previous-imports/previous-imports.component';
+ import Subscription from './subscription/subscription.component';
+ import styles from './root.scss';
++import { OFFLINE_MESSAGE } from './utils';
+
+ const Root: React.FC = () => {
+   const { t } = useTranslation();
+@@ -20,6 +21,7 @@ const Root: React.FC = () => {
+         </TabList>
+         <TabPanels>
+           <TabPanel className={styles.tabPanel}>
++            <p>{OFFLINE_MESSAGE} Subscription settings are stored locally; automatic updates do not run.</p>
+             <Subscription />
+           </TabPanel>
+           <TabPanel className={styles.tabPanel}>
 diff --git a/packages/esm-admin-openconceptlab-app/src/subscription/subscription.component.tsx b/packages/esm-admin-openconceptlab-app/src/subscription/subscription.component.tsx
 index 7a10f8e..b40ce2c 100644
 --- a/packages/esm-admin-openconceptlab-app/src/subscription/subscription.component.tsx
@@ -97,7 +171,7 @@ index 7a10f8e..b40ce2c 100644
 -import { isVersionDefinedInUrl } from '../utils';
 +import { getErrorMessage, isVersionDefinedInUrl, PREVIOUS_IMPORTS_URL, SUBSCRIPTION_URL } from '../utils';
  import styles from './subscription.scss';
- 
+
  const Subscription: React.FC = () => {
 @@ -89,12 +89,11 @@ const Subscription: React.FC = () => {
          validationType: validationType,
@@ -106,7 +180,7 @@ index 7a10f8e..b40ce2c 100644
 -      mutate('/ws/rest/v1/openconceptlab/subscription?v=full', updatedSubscription, false);
 +      // The cache holds the whole response, so the optimistic value has the same shape.
 +      mutate(SUBSCRIPTION_URL, { data: { results: [updatedSubscription] } }, false);
- 
+
 -      const response = await updateSubscription(updatedSubscription, abortController);
 -      mutate('/ws/rest/v1/openconceptlab/subscription?v=full');
 -
@@ -132,12 +206,12 @@ index 7a10f8e..b40ce2c 100644
 +      } finally {
 +        mutate(SUBSCRIPTION_URL);
        }
- 
+
        return () => abortController.abort();
 @@ -135,10 +136,8 @@ const Subscription: React.FC = () => {
        evt.stopPropagation();
        const abortController = new AbortController();
- 
+
 -      const response = await deleteSubscription(subscription, abortController);
 -      mutate('/ws/rest/v1/openconceptlab/subscription?v=full');
 -
@@ -165,15 +239,15 @@ index 7a10f8e..b40ce2c 100644
 +        // Unsubscribing also deletes the subscription's imports on the server.
 +        mutate(PREVIOUS_IMPORTS_URL);
        }
- 
+
        return () => abortController.abort();
 diff --git a/packages/esm-admin-openconceptlab-app/src/utils.ts b/packages/esm-admin-openconceptlab-app/src/utils.ts
-index b118e72..df568b6 100644
+index b118e72..f141c00 100644
 --- a/packages/esm-admin-openconceptlab-app/src/utils.ts
 +++ b/packages/esm-admin-openconceptlab-app/src/utils.ts
 @@ -1,5 +1,13 @@
  const NUMBER_OF_SLASHES_AFTER_BASE_URL = 5;
- 
+
 +export const SUBSCRIPTION_URL = '/ws/rest/v1/openconceptlab/subscription?v=full';
 +export const PREVIOUS_IMPORTS_URL = '/ws/rest/v1/openconceptlab/import?v=full';
 +
@@ -185,6 +259,12 @@ index b118e72..df568b6 100644
  /*
   * This checks if collection version has been passed to subscription url by checking number of forward slashes after base url
   * If the number is 5, such as with https://api.openconceptlab.org/users/username/collections/collectionname/v1.0
+@@ -25,3 +33,5 @@ export const isVersionDefinedInUrl = (subscriptionUrl: string) => {
+     return false;
+   }
+ };
++
++export const OFFLINE_MESSAGE = 'Remote OCL imports are disabled in this environment. Import a local ZIP file containing export.json instead.';
 diff --git a/packages/esm-reports-app/src/components/edit-scheduled-report/edit-scheduled-report-form.component.tsx b/packages/esm-reports-app/src/components/edit-scheduled-report/edit-scheduled-report-form.component.tsx
 index ec07dda..d2dd5a5 100644
 --- a/packages/esm-reports-app/src/components/edit-scheduled-report/edit-scheduled-report-form.component.tsx
@@ -208,14 +288,14 @@ index ec07dda..d2dd5a5 100644
          );
 @@ -100,8 +100,9 @@ const EditScheduledReportForm: React.FC<EditScheduledReportForm> = ({
    };
- 
+
    useEffect(() => {
 -    setIsSubmittable(!!schedule && !!renderModeUuid);
 -  }, [schedule, renderModeUuid]);
 +    setIsSubmittable(!!schedule && !!renderModeUuid &&
 +      (reportDefinition?.parameters ?? []).every((parameter) => !parameter.required || !!reportParameters[parameter.name]));
 +  }, [schedule, renderModeUuid, reportDefinition?.parameters, reportParameters]);
- 
+
    return (
      <Form className={styles.desktopEditSchedule} onChange={handleOnChange} onSubmit={handleSubmit}>
 @@ -117,7 +118,7 @@ const EditScheduledReportForm: React.FC<EditScheduledReportForm> = ({
@@ -236,13 +316,13 @@ index e73b4cf..010cb96 100644
  import dayjs from 'dayjs';
  import utc from 'dayjs/plugin/utc';
 +import { toUnixDayOfWeekNumbering } from '../utils/openmrs-cron-utils';
- 
+
  dayjs.extend(utc);
- 
+
 @@ -17,12 +18,12 @@ const NextReportExecution: React.FC<NextReportExecutionProps> = ({ schedule, cur
        return '';
      }
- 
+
 -    const expression = cronjsParser.parse(schedule, { hasSeconds: true });
 +    const expression = cronjsParser.parse(toUnixDayOfWeekNumbering(schedule), { hasSeconds: true });
      const nextExecutions = cronjsMatcher.getFutureMatches(expression, {
@@ -252,16 +332,16 @@ index e73b4cf..010cb96 100644
 -    return nextExecutions.length === 1 ? dayjs.utc(nextExecutions[0].toString()).format('YYYY-MM-DD HH:mm') : '';
 +    return nextExecutions.length === 1 ? dayjs.utc(nextExecutions[0].toString()).local().format('YYYY-MM-DD HH:mm') : '';
    })();
- 
+
    return <span>{nextReportExecutionDate}</span>;
 diff --git a/packages/esm-reports-app/src/components/report-data-viewer.component.tsx b/packages/esm-reports-app/src/components/report-data-viewer.component.tsx
 index 973a744..6696d9b 100644
 --- a/packages/esm-reports-app/src/components/report-data-viewer.component.tsx
 +++ b/packages/esm-reports-app/src/components/report-data-viewer.component.tsx
 @@ -81,29 +81,30 @@ const ReportDataViewer: React.FC<ReportDataViewerProps> = ({ reportData }) => {
- 
+
      const selectedColumnsData = columns.filter((col) => selectedColumnNames.includes(col.name));
- 
+
 +    // Quote a field per RFC 4180 when it holds a comma, a double quote or a line break, doubling inner quotes.
 +    const toCsvField = (value: unknown) => {
 +      const text = value === null || value === undefined ? '' : String(value);
@@ -271,7 +351,7 @@ index 973a744..6696d9b 100644
      // Create CSV header
 -    const header = selectedColumnsData.map((col) => col.label).join(',');
 +    const header = selectedColumnsData.map((col) => toCsvField(col.label)).join(',');
- 
+
      // Create CSV rows
      const csvRows = rows.map((row) => {
        return selectedColumnsData
@@ -312,7 +392,7 @@ index a7e8d4e..a27409a 100644
  import { useTranslation } from 'react-i18next';
  import { useDebounce } from '@openmrs/esm-framework';
 @@ -15,9 +15,11 @@ interface ReportParameterInputProps {
- 
+
  function getInitialValue(parameter: any, value: any) {
    if (parameter.type === 'java.util.Date') {
 -    return new Date(value);
@@ -374,7 +454,7 @@ index a7e8d4e..a27409a 100644
            <div>
 @@ -180,6 +202,11 @@ const ReportParameterInput: React.FC<ReportParameterInputProps> = ({ parameter,
    };
- 
+
    function handleOnDateChange(dateValue) {
 +    if (!dateValue || Number.isNaN(new Date(dateValue).getTime())) {
 +      setValueInternal('');
@@ -393,18 +473,18 @@ index dfdcb14..3b9db2d 100644
  import styles from './report-parameter.scss';
  import ConceptSearchInput from './concept-search/concept-search-input.component';
 +import { useEncounterTypes } from './reports.resource';
- 
+
  type DateReportParameter = 'java.util.Date';
  type InputReportParameter = 'java.lang.String' | 'java.lang.Integer';
 -type SelectReportParameter = 'org.openmrs.Location';
 +type SelectReportParameter = 'org.openmrs.Location' | 'org.openmrs.EncounterType';
  type ReportParameterType = DateReportParameter | InputReportParameter | SelectReportParameter | string;
- 
+
  interface ReportParameterInterface {
 @@ -35,6 +36,29 @@ type ReportParameterProps = ReportParameterPropsBase &
        }
    );
- 
+
 +interface EncounterTypeSelectProps {
 +  parameter: ReportParameterInterface;
 +  value: string;
@@ -503,7 +583,7 @@ index 100965c..ff4190c 100644
 @@ -39,6 +39,16 @@ export function useLocations() {
    };
  }
- 
+
 +export function useEncounterTypes() {
 +  const { data } = useOpenmrsFetchAll<{ uuid: string; display: string }>(
 +    `${restBaseUrl}/encountertype?v=custom:(uuid,display)`,
@@ -528,7 +608,7 @@ index 100965c..ff4190c 100644
 +          : 0,
 +    },
    );
- 
+
    const reports = data?.data?.results;
 diff --git a/packages/esm-reports-app/src/components/run-report/run-report-form.component.tsx b/packages/esm-reports-app/src/components/run-report/run-report-form.component.tsx
 index fdb470a..cb45c56 100644
@@ -585,30 +665,6 @@ index 1eb8402..389bed6 100644
        time: { hours: parseInt(openMRSCron.hours), minutes: parseInt(openMRSCron.minutes) },
        cron: null,
      };
-diff --git a/packages/esm-reports-app/src/utils/openmrs-cron-utils.test.ts b/packages/esm-reports-app/src/utils/openmrs-cron-utils.test.ts
-new file mode 100644
-index 0000000..3d96ddd
---- /dev/null
-+++ b/packages/esm-reports-app/src/utils/openmrs-cron-utils.test.ts
-@@ -0,0 +1,18 @@
-+import { describe, expect, it } from 'vitest';
-+import { toUnixDayOfWeekNumbering } from './openmrs-cron-utils';
-+
-+describe('toUnixDayOfWeekNumbering', () => {
-+  it('shifts Quartz day-of-week numbers (Sunday = 1) to Unix numbers (Sunday = 0)', () => {
-+    expect(toUnixDayOfWeekNumbering('0 30 7 ? * 2,5')).toBe('0 30 7 ? * 1,4');
-+    expect(toUnixDayOfWeekNumbering('0 0 6 ? * 2-6')).toBe('0 0 6 ? * 1-5');
-+    expect(toUnixDayOfWeekNumbering('0 0 6 ? * 1')).toBe('0 0 6 ? * 0');
-+  });
-+
-+  it('leaves steps, nth occurrences, names and other fields alone', () => {
-+    expect(toUnixDayOfWeekNumbering('0 0 6 ? * 6#3')).toBe('0 0 6 ? * 5#3');
-+    expect(toUnixDayOfWeekNumbering('0 0 6 ? * 1/2')).toBe('0 0 6 ? * 0/2');
-+    expect(toUnixDayOfWeekNumbering('0 0 6 ? * MON')).toBe('0 0 6 ? * MON');
-+    expect(toUnixDayOfWeekNumbering('0 0 6 * * ?')).toBe('0 0 6 * * ?');
-+    expect(toUnixDayOfWeekNumbering('0 30 8 16 3 ? 2026')).toBe('0 30 8 16 3 ? 2026');
-+  });
-+});
 diff --git a/packages/esm-reports-app/src/utils/openmrs-cron-utils.ts b/packages/esm-reports-app/src/utils/openmrs-cron-utils.ts
 index 361e559..b6cdf03 100644
 --- a/packages/esm-reports-app/src/utils/openmrs-cron-utils.ts

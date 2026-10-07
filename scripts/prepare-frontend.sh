@@ -28,26 +28,34 @@ if [ "${1:-}" = '--native' ]; then
     export NODE_OPTIONS=--max-old-space-size=6144
     yarn_file=$(find .yarn/releases -name 'yarn-*.cjs' -maxdepth 1 | head -1)
     node "$yarn_file" install --immutable
-    cd packages/esm-reports-app
+    for package in esm-reports-app esm-admin-openconceptlab-app; do
+    cd "$source_dir/packages/$package"
     node ../../node_modules/typescript/bin/tsc --noEmit
     node ../../node_modules/@rspack/cli/bin/rspack.js --mode production
-    mkdir -p "$root/.build/frontend/reports-dist"
-    cp -R dist/. "$root/.build/frontend/reports-dist/"
+    output=reports-dist; [ "$package" = esm-admin-openconceptlab-app ] && output=ocl-dist
+    mkdir -p "$root/.build/frontend/$output"
+    cp -R dist/. "$root/.build/frontend/$output/"
+    done
   )
 else
 docker run --rm -v "$source_dir:/src" -v "$root/.build/frontend:/out" -w /src -e COREPACK_ENABLE_DOWNLOAD_PROMPT=0 -e NODE_OPTIONS=--max-old-space-size=6144 "$node_image" bash -euc '
 corepack enable
 yarn install --immutable
-cd packages/esm-reports-app
+for package in esm-reports-app esm-admin-openconceptlab-app; do
+cd /src/packages/$package
 node ../../node_modules/typescript/bin/tsc --noEmit
 node ../../node_modules/@rspack/cli/bin/rspack.js --mode production
-mkdir -p /out/reports-dist
-cp -R dist/. /out/reports-dist/
+output=reports-dist; [ "$package" = esm-admin-openconceptlab-app ] && output=ocl-dist
+mkdir -p /out/$output
+cp -R dist/. /out/$output/
+done
 '
 fi
 python3 - "$root/.build/frontend" <<'PY'
 import hashlib,pathlib,re,sys
 root=pathlib.Path(sys.argv[1]);digest=hashlib.sha256((root/'reports-dist/openmrs-esm-reports-app.js').read_bytes()).hexdigest()[:12]
+ocl_digest=hashlib.sha256((root/'ocl-dist/openmrs-esm-openconceptlab-app.js').read_bytes()).hexdigest()[:12]
 for name in ['Dockerfile','importmap.json']:
  p=root/name;p.write_text(re.sub(r'openmrs-esm-reports-app-4\.4\.0-reports-flows(?:-[0-9a-f]{12})?', 'openmrs-esm-reports-app-4.4.0-reports-flows-'+digest,p.read_text()))
+ p.write_text(re.sub(r'openmrs-esm-openconceptlab-app-4\.4\.0-offline(?:-[0-9a-f]{12})?', 'openmrs-esm-openconceptlab-app-4.4.0-offline-'+ocl_digest,p.read_text()))
 PY
