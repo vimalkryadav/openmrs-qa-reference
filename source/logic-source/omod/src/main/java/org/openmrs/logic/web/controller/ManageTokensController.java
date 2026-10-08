@@ -33,12 +33,12 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @Controller
 public class ManageTokensController {
 
-	@RequestMapping("/module/logic/manageTokens")
-	public void listTokens() {
-		// do nothing -- tokens will be shown via ajax
+	@RequestMapping({"/module/logic/manageTokens", "/module/logic/manageTokens.list"})
+	public String listTokens() {
+        return "/module/logic/manageTokens";
 	}
 	
-	@RequestMapping("/module/logic/listTokensQuery")
+	@RequestMapping({"/module/logic/listTokensQuery", "/module/logic/listTokensQuery.form"})
 	public @ResponseBody Map<String, Object> listTokensQuery(@RequestParam(value="sSearch", required=false) String query,
 	                              @RequestParam(value="iDisplayStart", required=false) Integer start,
 	                              @RequestParam(value="iDisplayLength", required=false) Integer length,
@@ -47,7 +47,9 @@ public class ManageTokensController {
 			echo = "0";
 		}
 		
-		TokenService service = Context.getService(TokenService.class);
+		start = start == null ? 0 : Math.max(0, start);
+        length = length == null ? 20 : Math.max(1, Math.min(100, length));
+        TokenService service = Context.getService(TokenService.class);
 		List<TokenRegistration> tokens = service.getTokenRegistrations(query, start, length);
 		Long count = service.getCountOfTokenRegistrations(query); // TODO skip if all results returned 
 		

@@ -13,31 +13,32 @@
 <a href="manageRuleDefinitions.list"><spring:message code="logic.rule.edit.back"/></a>
 
 <h2><spring:message code="logic.rule.edit.title"/></h2>
+<c:if test="${not empty rule.id}"><p>Java class name: <code>org.openmrs.module.logic.rule.CompiledRule${rule.id}</code></p></c:if>
 
 <form method="post">
 	<table>
 		<tr valign="top">
 			<th><spring:message code="logic.RuleDefinition.name"/></th>
 			<td>
-				<spring:bind path="rule.name">
-					<input type="text" name="${status.expression}" value="${status.value}"/>
-					<c:if test="${status.errorMessage != ''}"><span class="error">${status.errorMessage}</span></c:if>
+				<spring:bind htmlEscape="false" path="rule.name">
+					<input type="text" maxlength="255" name="${status.expression}" value="<c:out value='${status.value}'/>"/>
+					<c:if test="${status.errorMessage != ''}"><span class="error"><c:out value="${status.errorMessage}"/></span></c:if>
 				</spring:bind>
 			</td>
 		</tr>
 		<tr valign="top">
 			<th><spring:message code="logic.RuleDefinition.description"/></th>
 			<td>
-				<spring:bind path="rule.description">
-					<textarea rows="3" cols="80" name="${status.expression}">${status.value}</textarea>
-					<c:if test="${status.errorMessage != ''}"><span class="error">${status.errorMessage}</span></c:if>
+				<spring:bind htmlEscape="false" path="rule.description">
+					<textarea maxlength="1000" rows="3" cols="80" name="${status.expression}"><c:out value="${status.value}"/></textarea>
+					<c:if test="${status.errorMessage != ''}"><span class="error"><c:out value="${status.errorMessage}"/></span></c:if>
 				</spring:bind>
 			</td>
 		</tr>
 		<tr valign="top">
 			<th><spring:message code="logic.RuleDefinition.language"/></th>
 			<td>
-				<spring:bind path="rule.language">
+				<spring:bind htmlEscape="false" path="rule.language">
 					<select name="${status.expression}">
 						<option value=""></option>
 						<c:forEach var="language" items="${ruleLanguages}">
@@ -46,16 +47,16 @@
 						    </option>
 						</c:forEach>
 					</select>
-					<c:if test="${status.errorMessage != ''}"><span class="error">${status.errorMessage}</span></c:if>
+					<c:if test="${status.errorMessage != ''}"><span class="error"><c:out value="${status.errorMessage}"/></span></c:if>
 				</spring:bind>
 			</td>
 		</tr>
 		<tr valign="top">
 			<th><spring:message code="logic.RuleDefinition.ruleContent"/></th>
 			<td>
-				<spring:bind path="rule.ruleContent">
-					<textarea rows="20" cols="80" name="${status.expression}">${status.value}</textarea>
-					<c:if test="${status.errorMessage != ''}"><span class="error">${status.errorMessage}</span></c:if>
+				<spring:bind htmlEscape="false" path="rule.ruleContent">
+					<textarea maxlength="2048" rows="20" cols="80" name="${status.expression}"><c:out value="${status.value}"/></textarea>
+					<c:if test="${status.errorMessage != ''}"><span class="error"><c:out value="${status.errorMessage}"/></span></c:if>
 				</spring:bind>
 			</td>
 		</tr>

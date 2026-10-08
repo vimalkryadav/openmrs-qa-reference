@@ -18,7 +18,9 @@
 
                 $j('#parameterizableSelector${model.id}').change(function(event){
                     var currVal = $j(this).val();
-                    var currLabel = $j("option:selected", this).html().replace(/\s+/g, '-');
+                    var typedKey = $j('#${model.id}NewKey').val();
+                    var currLabel = typedKey || $j("option:selected", this).text().replace(/\s+/g, '-');
+                    currLabel = encodeURIComponent(currLabel);
                     if (currVal != '') {
                         document.location.href='<c:url value="/module/reporting/viewPortlet.htm?id=editMappedPropertyPortlet${model.id}&url=mappedProperty&parameters.type=${model.type}&parameters.uuid=${model.uuid}&parameters.property=${model.property}&parameters.keyLabel=${model.keyLabel}&parameters.typeLabel=${model.typeLabel}&parameters.currentKey=${model.currentKey}&parameters.newKey='+currLabel+'&parameters.mode=edit&parameters.keyLabel=${model.keyLabel}&parameters.typeLabel=${model.typeLabel}&parameters.mappedUuid='+currVal+'"/>';
                     }

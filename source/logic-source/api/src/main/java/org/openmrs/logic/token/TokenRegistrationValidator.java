@@ -21,7 +21,7 @@ import org.springframework.validation.Validator;
  * Validator for {@link TokenRegistration}
  */
 public class TokenRegistrationValidator implements Validator {
-	
+
 	/**
 	 * @see org.springframework.validation.Validator#supports(java.lang.Class)
 	 */
@@ -29,15 +29,23 @@ public class TokenRegistrationValidator implements Validator {
 	public boolean supports(Class c) {
 		return c.equals(TokenRegistration.class);
 	}
-	
+
 	/**
 	 * @see org.springframework.validation.Validator#validate(java.lang.Object, org.springframework.validation.Errors)
 	 */
 	public void validate(Object obj, Errors errors) {
-		ValidationUtils.rejectIfEmpty(errors, "token", "error.null");
-		ValidationUtils.rejectIfEmpty(errors, "providerClassName", "error.null");
-		ValidationUtils.rejectIfEmpty(errors, "configuration", "error.null");
-		ValidationUtils.rejectIfEmpty(errors, "providerToken", "error.null");
-	}
-	
+		ValidationUtils.rejectIfEmptyOrWhitespace(errors, "token", "error.null");
+		ValidationUtils.rejectIfEmptyOrWhitespace(errors, "providerClassName", "error.null");
+		ValidationUtils.rejectIfEmptyOrWhitespace(errors, "configuration", "error.null");
+		ValidationUtils.rejectIfEmptyOrWhitespace(errors, "providerToken", "error.null");
+        TokenRegistration token = (TokenRegistration)obj;
+        String[] fields = {"token", "providerClassName", "configuration", "providerToken"};
+        String[] values = {token.getToken(), token.getProviderClassName(), token.getConfiguration(), token.getProviderToken()};
+        for (int i=0; i<fields.length; i++) {
+            int maximum = fields[i].equals("configuration") ? 2000 : 512;
+            if (values[i] != null && values[i].length() > maximum)
+                errors.rejectValue(fields[i], "error.invalid", "Use " + maximum + " characters or fewer");
+        }
+    }
+
 }

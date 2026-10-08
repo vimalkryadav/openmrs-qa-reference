@@ -43,9 +43,19 @@ public class ParameterizablePortletFormController {
     		@RequestParam(required=true, value="type") Class<? extends BaseDefinition> type,
     		@RequestParam(required=true, value="uuid") String uuid,
     		@RequestParam(required=true, value="name") String name,
-    		@RequestParam(required=true, value="description") String description){
+            @RequestParam(required=true, value="description") String description,
+            javax.servlet.http.HttpServletResponse response) throws java.io.IOException {
     	
     	String successUrl = request.getParameter("successUrl");
+        try {
+            name = org.openmrs.module.reporting.web.util.ReportInputValidation.metadataName(
+                    org.openmrs.module.reporting.web.util.ReportInputValidation.metadataText(request, "name"));
+            description = org.openmrs.module.reporting.web.util.ReportInputValidation.metadataText(request, "description");
+            if (description.length() > 5000) throw new IllegalArgumentException("Description must be 5000 characters or fewer");
+        } catch (IllegalArgumentException invalid) {
+            response.setStatus(400); response.setContentType("text/plain;charset=UTF-8");
+            response.getWriter().write(invalid.getMessage()); return null;
+        }
         // Portlet model strings are HTML escaped before rendering the hidden field.
         if (successUrl != null) {
             successUrl = HtmlUtils.htmlUnescape(successUrl);
@@ -68,8 +78,8 @@ public class ParameterizablePortletFormController {
     			throw new IllegalArgumentException("Cannot instantiate a new " + type, e);
     		}
     	}
-    	p.setName(WebUtil.escapeHTML(name));
-    	p.setDescription(WebUtil.escapeHTML(description));
+        p.setName(name);
+        p.setDescription(description);
     	p = ParameterizableUtil.saveParameterizable(p);
     	
     	if (StringUtils.isNotEmpty(successUrl)) {

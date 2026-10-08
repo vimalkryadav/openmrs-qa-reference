@@ -304,7 +304,8 @@ public class TokenServiceImpl extends BaseOpenmrsService implements TokenService
 	 */
 	public TokenRegistration saveTokenRegistration(TokenRegistration tokenRegistration) {
 		TokenRegistration ret = dao.saveTokenRegistration(tokenRegistration);
-		ruleCache.remove(tokenRegistration.getToken());
+		// An edited registration may have changed its name; invalidate the old key too.
+		ruleCache.clear();
 		return ret;
 	}
 

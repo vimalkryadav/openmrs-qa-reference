@@ -77,14 +77,30 @@ public class ReportHistoryController {
         binder.registerCustomEditor(Date.class, new CustomDateEditor(dateFormat, true, 10));
     }
 
+    @RequestMapping("/module/reporting/reports/validateSchedule.form")
+    public void validateSchedule(@RequestParam("expression") String expression, HttpServletResponse response) throws IOException {
+        String error = org.openmrs.module.reporting.web.util.ReportInputValidation.scheduleError(expression);
+        response.setContentType("text/plain;charset=UTF-8");
+        if (error != null) { response.setStatus(400); response.getWriter().write(error); }
+    }
+
     @RequestMapping("/module/reporting/reports/reportHistory.form")
     public void showReportHistory(ModelMap model,
                                   @RequestParam(value="reportDefinition", required=false) ReportDefinition reportDefinition,
                                   @RequestParam(value="requestedBy", required=false) User requestedBy,
                                   @RequestParam(value="statuses", required=false) Status[] statuses,
-                                  @RequestParam(value="requestOnOrAfter", required=false) Date requestOnOrAfter,
-                                  @RequestParam(value="requestOnOrBefore", required=false) Date requestOnOrBefore) {
+                                  @RequestParam(value="requestOnOrAfter", required=false) String afterText,
+                                  @RequestParam(value="requestOnOrBefore", required=false) String beforeText) {
 
+        Date requestOnOrAfter = null, requestOnOrBefore = null;
+        try {
+            requestOnOrAfter = org.openmrs.module.reporting.web.util.ReportInputValidation.parseDate(afterText, Context.getDateFormat());
+            requestOnOrBefore = org.openmrs.module.reporting.web.util.ReportInputValidation.parseDate(beforeText, Context.getDateFormat());
+            if (requestOnOrAfter != null && requestOnOrBefore != null && requestOnOrAfter.after(requestOnOrBefore))
+                throw new IllegalArgumentException("Requested from must be on or before the end date");
+        } catch (IllegalArgumentException invalid) { model.addAttribute("dateError", invalid.getMessage()); }
+        model.addAttribute("afterText", afterText);
+        model.addAttribute("beforeText", beforeText);
         Status[] historyStatuses = new Status[] {Status.COMPLETED, Status.SAVED, Status.FAILED};
         model.addAttribute("historyStatuses", historyStatuses);
         if (statuses == null) {
@@ -99,7 +115,8 @@ public class ReportHistoryController {
 
         requestOnOrBefore = DateUtil.getEndOfDayIfTimeExcluded(requestOnOrBefore);
 
-        List<ReportRequest> history = getReportService().getReportRequests(reportDefinition, requestOnOrAfter, requestOnOrBefore, statuses);
+        List<ReportRequest> history = model.containsAttribute("dateError") ? new ArrayList<ReportRequest>()
+                : getReportService().getReportRequests(reportDefinition, requestOnOrAfter, requestOnOrBefore, statuses);
         if (requestedBy != null) {
             for (Iterator<ReportRequest> i = history.iterator(); i.hasNext();) {
                 ReportRequest rr = i.next();
@@ -125,10 +142,11 @@ public class ReportHistoryController {
 
     @RequestMapping("/module/reporting/reports/deleteReportRequest.form")
     public String deleteReportRequest(@RequestParam("uuid") String uuid,
-                                      @RequestParam(value="returnUrl", required=false) String returnUrl) {
+                                      @RequestParam(value="returnUrl", required=false) String returnUrl, HttpServletRequest httpRequest) {
         ReportService rs = Context.getService(ReportService.class);
         ReportRequest request = rs.getReportRequestByUuid(uuid);
-        rs.purgeReportRequest(request);
+        if (request != null) rs.purgeReportRequest(request);
+        httpRequest.getSession().setAttribute(WebConstants.OPENMRS_MSG_ATTR, "Report request deleted");
         return "redirect:" + ObjectUtil.nvlStr(returnUrl, "reportHistory.form");
     }
 
@@ -137,6 +155,10 @@ public class ReportHistoryController {
 
         ReportService rs = Context.getService(ReportService.class);
         ReportRequest request = rs.getReportRequestByUuid(uuid);
+        if (request == null) {
+            model.addAttribute("json", Collections.singletonMap("status", "DELETED"));
+            return "/module/reporting/json";
+        }
         String status = request.getStatus().toString();
         List<String> reportLog = rs.loadReportLog(request);
         if ("REQUESTED".equals(status)) {
@@ -160,23 +182,34 @@ public class ReportHistoryController {
     @RequestMapping("/module/reporting/reports/viewErrorDetails.form")
     public void viewErrorDetails(HttpServletResponse response, @RequestParam("uuid") String uuid) throws IOException {
         ReportRequest rr = Context.getService(ReportService.class).getReportRequestByUuid(uuid);
-        String error = Context.getService(ReportService.class).loadReportError(rr);
-        response.getWriter().write(error);
+        String error = null;
+        if (rr != null) {
+            try { error = Context.getService(ReportService.class).loadReportError(rr); }
+            catch (RuntimeException unavailable) { log.warn("Report error file is unavailable for " + uuid); }
+        }
+        response.setContentType("text/plain;charset=UTF-8");
+        response.getWriter().write(error == null || error.trim().isEmpty()
+                ? "Failure details are unavailable for this request. View the report log or run the report again to capture a new error." : error);
     }
 
     @RequestMapping("/module/reporting/reports/reportHistorySave.form")
-    public String saveHistoryElement(@RequestParam("uuid") String uuid, @RequestParam(value="description", required=false) String description) {
+    public String saveHistoryElement(@RequestParam("uuid") String uuid, @RequestParam(value="description", required=false) String description,
+                                    HttpServletRequest request) {
         ReportService rs = Context.getService(ReportService.class);
         ReportRequest rr = rs.getReportRequestByUuid(uuid);
+        if (rr == null) return "redirect:/module/reporting/reports/reportHistory.form";
+        description = org.openmrs.module.reporting.web.util.ReportInputValidation.metadataText(request, "description").trim();
+        if (description.length() > 1000) throw new IllegalArgumentException("Description must be 1000 characters or fewer");
         Report report = rs.loadReport(rr);
         rs.saveReport(report, description);
+        request.getSession().setAttribute(WebConstants.OPENMRS_MSG_ATTR, "Report saved");
         return "redirect:/module/reporting/reports/reportHistoryOpen.form?uuid="+uuid;
     }
 
     @RequestMapping("/module/reporting/reports/reportHistoryOpen.form")
-    public String openFromHistory(@RequestParam("uuid") String uuid, HttpServletResponse response, WebRequest request, ModelMap model) throws IOException {
+    public String openFromHistory(@RequestParam(value="uuid", required=false) String uuid, HttpServletResponse response, WebRequest request, ModelMap model) throws IOException {
         ReportService rs = Context.getService(ReportService.class);
-        ReportRequest req = rs.getReportRequestByUuid(uuid);
+        ReportRequest req = uuid == null ? null : rs.getReportRequestByUuid(uuid);
         if (req == null) {
             log.warn("Cannot load report request " + uuid);
             request.setAttribute(WebConstants.OPENMRS_ERROR_ATTR, "Cannot load report request", WebRequest.SCOPE_SESSION);
@@ -193,7 +226,8 @@ public class ReportHistoryController {
             model.addAttribute("positionInQueue", rs.getPositionInQueue(req));
         }
         if (req.getStatus() == Status.FAILED) {
-            model.addAttribute("errorDetails", rs.loadReportError(req));
+            try { model.addAttribute("errorDetails", rs.loadReportError(req)); }
+            catch (RuntimeException unavailable) { model.addAttribute("errorDetails", "Failure details are unavailable"); }
         }
 
         List<ReportProcessorConfiguration> onDemandProcessors = new ArrayList<ReportProcessorConfiguration>();

@@ -25,8 +25,9 @@ replacements={name:data for name,data in all_controller_classes.items() if name 
 rest_original=(ROOT/"backend-inputs/reportingrest-2.0.0.omod").read_bytes()
 (ROOT/"backend/reportingrest-2.0.0.omod").write_bytes(patched_zip(rest_original,rest_replacements))
 for folder in ("reporting-web", "web-overrides"):
-    for page in (ROOT/folder).rglob("*.jsp"):
-        replacements["web/module/"+page.relative_to(ROOT/folder).as_posix()]=page.read_bytes()
+    for page in (ROOT/folder).rglob("*"):
+        if page.is_file() and page.suffix in (".jsp", ".tag"):
+            replacements["web/module/"+page.relative_to(ROOT/folder).as_posix()]=page.read_bytes()
 api_replacements=classes("backend-classes")
 for resource in (ROOT/"reporting-resources").rglob("*"):
     if resource.is_file(): api_replacements[resource.relative_to(ROOT/"reporting-resources").as_posix()]=resource.read_bytes()
@@ -36,7 +37,17 @@ shutil.copytree(ROOT/"core-classes",ROOT/"backend/core/WEB-INF/classes",dirs_exi
 print("Prepared patched reporting module and core property editor")
 
 original=(ROOT/"backend-inputs/legacyui-2.1.0.omod").read_bytes()
-(ROOT/"backend/legacyui-2.1.0.omod").write_bytes(patched_zip(original,classes("legacyui-classes")))
+replacements=classes("legacyui-classes")
+for page in (ROOT/"legacyui-web").rglob("*.jsp"):
+    replacements["web/module/"+page.relative_to(ROOT/"legacyui-web").as_posix()]=page.read_bytes()
+with zipfile.ZipFile(io.BytesIO(original)) as archive:
+    for resource in (ROOT/"legacyui-resources").glob("*.properties"):
+        existing=archive.read(resource.name) if resource.name in archive.namelist() else b""
+        replacements[resource.name]=existing+b"\n"+resource.read_bytes()
+    config=archive.read("config.xml").decode()
+    config=config.replace("<!-- /Internationalization -->", "<messages><lang>it</lang><file>messages_it.properties</file></messages>\n\t<!-- /Internationalization -->")
+    replacements["config.xml"]=config.encode()
+(ROOT/"backend/legacyui-2.1.0.omod").write_bytes(patched_zip(original,replacements))
 original=(ROOT/"backend-inputs/patientdocuments-1.1.0.omod").read_bytes()
 with zipfile.ZipFile(io.BytesIO(original)) as archive:
     name=next(n for n in archive.namelist() if n.endswith("patientdocuments-api-1.1.0.jar"))

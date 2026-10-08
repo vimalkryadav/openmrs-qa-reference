@@ -26,9 +26,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @Controller
 public class ManageRuleDefinitionsController {
 	
-	@RequestMapping(value="/module/logic/manageRuleDefinitions")
-	public void listLogicRules(Model model) {
+	@RequestMapping({"/module/logic/manageRuleDefinitions", "/module/logic/manageRuleDefinitions.list"})
+	public String listLogicRules(Model model) {
 		model.addAttribute("rules", Context.getService(RuleDefinitionService.class).getAllRuleDefinitions(true));
+        return "/module/logic/manageRuleDefinitions";
 	}
 
 }

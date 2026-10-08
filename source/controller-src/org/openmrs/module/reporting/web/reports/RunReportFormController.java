@@ -89,6 +89,16 @@ public class RunReportFormController extends SimpleFormController implements Val
                     if (parameter.isRequired()) {
                         requiredParams.add(parameter.getName());
                     }
+                    // Validate dates before unrelated form errors can prevent onSubmit.
+                    Object submitted = command.getUserEnteredParams().get(parameter.getName());
+                    if (java.util.Date.class.equals(parameter.getType()) && ObjectUtil.notNull(submitted)
+                            && !StringUtils.hasText(command.getExpressions().get(parameter.getName()))) {
+                        try {
+                            org.openmrs.module.reporting.web.util.ReportInputValidation.parse(submitted, parameter.getType(), parameter.getCollectionType());
+                        } catch (IllegalArgumentException invalid) {
+                            errors.rejectValue("userEnteredParams[" + parameter.getName() + "]", "reporting.invalidParameter", null, invalid.getMessage());
+                        }
+                    }
                 }
             }
 
@@ -133,8 +143,9 @@ public class RunReportFormController extends SimpleFormController implements Val
             }
 
             if (ObjectUtil.notNull(command.getSchedule())) {
-                if (!CronExpression.isValidExpression(command.getSchedule())) {
-                    errors.rejectValue("schedule", "reporting.Report.run.error.invalidCronExpression");
+                String scheduleError = org.openmrs.module.reporting.web.util.ReportInputValidation.scheduleError(command.getSchedule());
+                if (scheduleError != null) {
+                    errors.rejectValue("schedule", "reporting.Report.run.error.invalidCronExpression", scheduleError);
                 }
             }
         }
@@ -150,6 +161,7 @@ public class RunReportFormController extends SimpleFormController implements Val
             if (StringUtils.hasText(request.getParameter("copyRequest"))) {
                 ReportRequest req = reportService.getReportRequestByUuid(request.getParameter("copyRequest"));
                 // avoid lazy init exceptions
+                if (req == null) throw org.openmrs.module.reporting.web.util.ReportInputValidation.missing("Report request not found. Open it from Report History.");
                 command.setReportDefinition(rds.getDefinitionByUuid(req.getReportDefinition().getParameterizable().getUuid()));
                 for (Map.Entry<String, Object> param : req.getReportDefinition().getParameterMappings().entrySet()) {
                     Object value = param.getValue();
@@ -164,6 +176,7 @@ public class RunReportFormController extends SimpleFormController implements Val
             else if (StringUtils.hasText(request.getParameter("requestUuid"))) {
                 String reqUuid = request.getParameter("requestUuid");
                 ReportRequest rr = reportService.getReportRequestByUuid(reqUuid);
+                if (rr == null) throw org.openmrs.module.reporting.web.util.ReportInputValidation.missing("Report request not found. Open it from Report History.");
                 command.setExistingRequestUuid(reqUuid);
                 command.setReportDefinition(rr.getReportDefinition().getParameterizable());
                 command.setUserEnteredParams(rr.getReportDefinition().getParameterMappings());
@@ -174,6 +187,7 @@ public class RunReportFormController extends SimpleFormController implements Val
             else {
                 String uuid = request.getParameter("reportId");
                 ReportDefinition reportDefinition = rds.getDefinitionByUuid(uuid);
+                if (reportDefinition == null) throw org.openmrs.module.reporting.web.util.ReportInputValidation.missing("This report no longer exists or the link is invalid. Open it from Report Dashboard.");
                 command.setReportDefinition(reportDefinition);
                 for (Parameter p : reportDefinition.getParameters()) {
                     if (p.getDefaultValue() != null) {

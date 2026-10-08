@@ -24,8 +24,8 @@
 	<tbody>
 		<c:forEach var="rule" items="${ rules }">
 			<tr>
-				<td><a href="editRuleDefinition.form?id=${ rule.id }">${ rule.name }</a></td>
-				<td>${ rule.language }</td>
+				<td><a href="editRuleDefinition.form?id=${ rule.id }"><c:out value="${rule.name}"/></a></td>
+				<td><c:out value="${rule.language}"/></td>
 			</tr>
 		</c:forEach>
 	</tbody>

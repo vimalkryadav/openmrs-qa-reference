@@ -13,6 +13,7 @@
  */
 package org.openmrs.logic.web.controller;
 
+import javax.servlet.http.HttpServletRequest;
 import org.openmrs.api.context.Context;
 import org.openmrs.logic.token.TokenRegistration;
 import org.openmrs.logic.token.TokenRegistrationValidator;
@@ -31,7 +32,7 @@ import org.springframework.web.bind.annotation.RequestParam;
  */
 @Controller
 public class EditTokenRegistrationController {
-	
+
 	@ModelAttribute("tokenRegistration")
 	TokenRegistration getTokenRegistration(@RequestParam(required=false, value="id") Integer id) {
 		if (id != null) {
@@ -40,24 +41,32 @@ public class EditTokenRegistrationController {
 			return new TokenRegistration();
 		}
 	}
-	
+
 	@RequestMapping(value="/module/logic/editTokenRegistration.form", method=RequestMethod.GET)
 	public void showEditTokenRegistrationPage() {
 	}
-	
+
 	@RequestMapping(value="/module/logic/editTokenRegistration.form", method=RequestMethod.POST)
 	public String doEditTokenRegistration(@ModelAttribute("tokenRegistration") TokenRegistration tokenRegistration,
 	   	                             	Errors errors,
-	   	                             	Model model) {
-		new TokenRegistrationValidator().validate(tokenRegistration, errors);
-		if (errors.hasErrors()) {
+                                     Model model, HttpServletRequest request) {
+		tokenRegistration.setToken(LogicWebInput.text(request,"token").trim());
+        tokenRegistration.setProviderClassName(LogicWebInput.text(request,"providerClassName").trim());
+        tokenRegistration.setConfiguration(LogicWebInput.text(request,"configuration"));
+        tokenRegistration.setProviderToken(LogicWebInput.text(request,"providerToken").trim());
+        new TokenRegistrationValidator().validate(tokenRegistration, errors);
+		if (!errors.hasFieldErrors("token")) {
+            TokenRegistration existing = Context.getService(TokenService.class).getTokenRegistrationByToken(tokenRegistration.getToken());
+            if (existing != null && !existing.getId().equals(tokenRegistration.getId())) errors.rejectValue("token","error.invalid", "A token with this name already exists");
+        }
+        if (errors.hasErrors()) {
 			return null;
 		} else {
 			Context.getService(TokenService.class).saveTokenRegistration(tokenRegistration);
 			return "redirect:manageTokens.list";
 		}
 	}
-	
+
 	@RequestMapping("/module/logic/deleteToken.form")
 	public String deleteTokenRegistration(@ModelAttribute("tokenRegistration") TokenRegistration tokenRegistration) {
 		Context.getService(TokenService.class).deleteTokenRegistration(tokenRegistration);

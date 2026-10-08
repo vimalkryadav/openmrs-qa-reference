@@ -84,6 +84,11 @@ public class QueryParameterFormController {
 			parameterizable = ParameterizableUtil.getParameterizable(uuid, type);
 		}
 		
+        if (parameterizable == null) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            return new ModelAndView("/module/reporting/reports/notFound", "message",
+                    "Save this definition before previewing it.");
+        }
         Map<String,Object> rawStructuredValues=new HashMap<String,Object>();
         for (Parameter parameter : parameterizable.getParameters()) rawStructuredValues.put(parameter.getName(),request.getParameter(parameter.getName()));
         try {

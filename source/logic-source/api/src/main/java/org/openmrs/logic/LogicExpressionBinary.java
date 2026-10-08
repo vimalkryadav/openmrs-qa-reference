@@ -158,6 +158,8 @@ public class LogicExpressionBinary implements LogicExpression {
 	/**
 	 * @see org.openmrs.logic.LogicExpression#setTransform(org.openmrs.logic.LogicTransform)
 	 */
+    public LogicTransform getDirectTransform() { return transform; }
+
 	public void setTransform(LogicTransform transform) {
 		this.transform = transform;
 	}

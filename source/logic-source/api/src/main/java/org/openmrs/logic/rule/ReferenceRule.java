@@ -30,28 +30,28 @@ import org.openmrs.logic.result.Result;
 import org.openmrs.logic.result.Result.Datatype;
 
 /**
- * 
+ *
  */
 public class ReferenceRule implements StatefulRule {
-	
+
 	protected final Log log = LogFactory.getLog(getClass());
-	
+
 	private LogicDataSource dataSource;
-	
+
 	private String key;
-	
+
 	private String reference;
-	
+
 	public ReferenceRule() {
 	}
-	
+
 	public ReferenceRule(String reference) throws InvalidReferenceRuleException {
 		this.reference = reference;
 		parse(reference);
 	}
-	
+
 	private void parse(String reference) throws InvalidReferenceRuleException {
-		
+
 		log.info("Parsing reference string " + reference);
 		int firstDotIndex = reference.indexOf('.');
 		if (firstDotIndex == -1)
@@ -69,36 +69,36 @@ public class ReferenceRule implements StatefulRule {
 			throw new InvalidReferenceRuleException("Invalid key (" + key + ") for LogicDataSource (" + dataSourceName
 			        + ").  Key attempted to be pulled from reference: " + reference);
 	}
-	
+
 	/**
 	 * @see org.openmrs.logic.Rule#eval(org.openmrs.logic.LogicContext, java.lang.Integer,
 	 *      java.util.Map)
 	 */
 	public Result eval(LogicContext context, Integer patientId, Map<String, Object> parameters) throws LogicException {
-		
+
 		log.info("Evaluating " + key + " ... ");
 		return context.read(patientId, dataSource, new LogicCriteriaImpl(key));
 	}
-	
+
 	public Result eval(LogicContext context, Integer patientId, LogicCriteria criteria) throws LogicException {
-		
-		return context.read(patientId, dataSource, criteria);
+
+		return context.read(patientId, dataSource, LogicCriteriaImpl.forDataSource(criteria, key));
 	}
-	
+
 	/**
 	 * @see org.openmrs.logic.Rule#getParameterList()
 	 */
 	public Set<RuleParameterInfo> getParameterList() {
 		return null;
 	}
-	
+
 	/**
 	 * @see org.openmrs.logic.Rule#getDependencies()
 	 */
 	public String[] getDependencies() {
 		return null;
 	}
-	
+
 	/**
 	 * @see org.openmrs.logic.Rule#getDefaultDatatype()
 	 */
@@ -107,14 +107,14 @@ public class ReferenceRule implements StatefulRule {
 		// string
 		return Datatype.TEXT;
 	}
-	
+
 	/**
 	 * @see org.openmrs.logic.Rule#getTTL()
 	 */
 	public int getTTL() {
 		return dataSource.getDefaultTTL();
 	}
-	
+
 	/**
 	 * @see org.openmrs.logic.StatefulRule#restoreFromString(java.lang.String)
 	 */
@@ -127,12 +127,12 @@ public class ReferenceRule implements StatefulRule {
 			log.error("Error generated", e);
 		}
 	}
-	
+
 	/**
 	 * @see org.openmrs.logic.StatefulRule#saveToString()
 	 */
 	public String saveToString() {
 		return reference;
 	}
-	
+
 }

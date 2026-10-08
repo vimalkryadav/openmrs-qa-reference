@@ -25,3 +25,33 @@ inside its API JAR; assembly patches both copies so the owned code is the code
 actually loaded. Calculation remains independent of Reporting at class-load time;
 optional saved defaults are read from the provider without adding a reverse module
 dependency.
+
+
+The October Reporting QA fixes extend stock Reporting 2.1.0 JSPs and tag files
+captured from the pinned module under `source/web-overrides/`. Assembly includes
+both `.jsp` and `.tag` overrides. `LogicReportController` preserves the upstream
+row-report creation workflow with validation before persistence. The scoped
+metadata reader recovers raw form text before the legacy request wrapper's HTML
+encoding; its rendering templates escape values at their HTML/JavaScript sinks.
+The global legacy XSS filter is unchanged.
+
+`source/legacyui-web/template/headerFull.jsp` starts from pinned legacyui 2.1.0
+and adds responsive account-header layout and locale-hint rendering. Selected
+Spanish/Italian message overrides live in `source/legacyui-resources/`; assembly
+merges them into the module's bundled properties and registers Italian without
+replacing its other translations. These are source overlays, not generated
+runtime files or a change to the reference clock/authentication settings.
+
+The Logic Admin repair extends the already vendored pinned Logic sources rather
+than adding a second module. Explicit Spring route/view mappings restore the
+legacy `.list`/`.form` links. Autocomplete returns the text representation its
+bundled plugin expects, and list pagination has a stable internal-ID order.
+Scoped `LogicWebInput` reads literal rule source/metadata before the legacy HTML
+wrapper; form and result JSPs escape output once. The global XSS filter stays
+unchanged. Alias evaluation copies the criteria before substituting the provider
+key, preserving transforms and the caller's cache identity. Token edits invalidate
+cached old names. Java compilation compares UTF-8 source contents and invalidates
+stale class files instead of comparing audit timestamps against filesystem time;
+annotation processor discovery is disabled for these standalone rule classes.
+The reference still runs its native Java/Groovy handlers; it does not share the
+clone's Python evaluator implementation.

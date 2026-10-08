@@ -20,7 +20,8 @@ function reportingRetainForm(form, validate, onSuccess) {
         $j.ajax({url: form.action, type: 'POST', data: $j(form).serialize(), dataType: 'text',
             success: function() { onSuccess(); },
             error: function(xhr) {
-                var text = 'Unable to save these values. Please correct the form and try again.';
+                var text = xhr.status === 0 ? 'Could not reach the server. Check your connection and try again.' : 'Unable to save these values. Please correct the form and try again.';
+                if (xhr.status === 400 && (xhr.getResponseHeader('Content-Type') || '').indexOf('text/plain') >= 0) text = xhr.responseText;
                 if (xhr.status === 400 || xhr.status === 404) {
                     var doc = new DOMParser().parseFromString(xhr.responseText, 'text/html');
                     var paragraphs = doc.querySelectorAll('p');

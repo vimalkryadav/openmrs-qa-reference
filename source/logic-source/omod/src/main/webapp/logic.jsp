@@ -49,7 +49,7 @@
 				
 				findPatientDiv.style.display = "none";
 				showPatientDiv.style.display = "block";
-				showPatientDiv.innerHTML = patientIdentifier + ": " + patientName + "&nbsp;&nbsp;&nbsp;<a href='javascript:choosePatient();' style='color: #8fabc7; font-size: .8em;'><spring:message code="logic.tester.step1.newPatient"/></a>";
+				$j(showPatientDiv).text(patientIdentifier + ": " + patientName + "   ").append($j("<a>").attr("href", "#").text("<spring:message code="logic.tester.step1.newPatient"/>").click(function(event) { event.preventDefault(); choosePatient(); }));
 			}
 		);
 		
@@ -63,6 +63,7 @@
 			selectFirst: true,
 			max: 100,
 			delay: 10,
+			formatItem: function(data) { return $j("<span>").text(data[0]).html(); },
 			formatResult: function (data, position, cnt) {
 				return '"' + data + '"';
 			}
@@ -72,7 +73,7 @@
 			<c:when test="${not empty patient}">
 				$j("#findPatient").hide();
 				$j("#showPatient").show();
-				$j("#showPatient").html("${patient.patientIdentifier}: ${patient.personName}&nbsp;&nbsp;&nbsp;<a href='javascript:choosePatient();' style='color: #8fabc7; font-size: .8em;'><spring:message code="logic.tester.step1.newPatient"/></a>");
+
 				
 				$j("#logicRuleField").focus();
 			</c:when>
@@ -120,6 +121,7 @@
 	
 	function choosePatient() {
 		patientId = null;
+        document.getElementById("patientIdField").value = "0";
 		patientIdentifier = null;
 		patientName = null;
 
@@ -143,12 +145,12 @@
 	</div>
 	<span class="error" id="patientError" style="display: none;"><spring:message code="Patient.select"/></span>
 </div>
-<h3><div id="showPatient" style="display: none; color: #627588; margin-left: 20px;"></div></h3>
+<h3><div id="showPatient" style="display: none; color: #627588; margin-left: 20px;"><c:out value="${patient.patientIdentifier.identifier}"/>: <c:out value="${patient.personName.fullName}"/>&nbsp;&nbsp;&nbsp;<a href="#" onclick="choosePatient(); return false;"><spring:message code="logic.tester.step1.newPatient"/></a></div></h3>
 
 <form action="run.form" method="post" onsubmit="return validate();">
 	<br/>
 	<h3><spring:message code="logic.tester.step2.title"/></h3>	
-	<input type="text" name="logicRule" id="logicRuleField" class="defaultText" title="<spring:message code="logic.tester.step2.hint"/>" autocomplete="off" style="width: 405px; margin-left: 20px;" <c:if test="${not empty token}">value="${ token }"</c:if>/>
+	<input type="text" name="logicRule" id="logicRuleField" class="defaultText" title="<spring:message code="logic.tester.step2.hint"/>" autocomplete="off" style="width: 405px; margin-left: 20px;" <c:if test="${not empty token}">value="<c:out value='${token}'/>"</c:if>/>
 	<span class="error" id="logicRuleError" style="display: none;"><spring:message code="error.required" arguments="Logic Rule Token" /></span>
 	
 	<br/><br/>

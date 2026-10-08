@@ -14,6 +14,7 @@
 package org.openmrs.logic.web.controller;
 
 import java.util.List;
+import javax.servlet.http.HttpServletRequest;
 
 import org.openmrs.api.context.Context;
 import org.openmrs.logic.rule.definition.LanguageHandler;
@@ -56,9 +57,20 @@ public class EditRuleDefinitionController {
 	@RequestMapping(value="/module/logic/editRuleDefinition.form", method=RequestMethod.POST)
 	public String doEditRulePage(@ModelAttribute("rule") RuleDefinition rule,
 	                             Errors errors,
-	                             Model model) {
-		new RuleDefinitionValidator().validate(rule, errors);
-		if (errors.hasErrors()) {
+	                             Model model, HttpServletRequest request) {
+		rule.setName(LogicWebInput.text(request, "name").trim());
+        rule.setDescription(LogicWebInput.text(request, "description"));
+        rule.setLanguage(LogicWebInput.text(request, "language"));
+        rule.setRuleContent(LogicWebInput.text(request, "ruleContent"));
+        new RuleDefinitionValidator().validate(rule, errors);
+		RuleDefinitionService service = Context.getService(RuleDefinitionService.class);
+        if (!errors.hasFieldErrors("name")) {
+            RuleDefinition existing = service.getRuleDefinition(rule.getName());
+            if (existing != null && !existing.getId().equals(rule.getId())) errors.rejectValue("name","error.invalid", "A rule with this name already exists");
+        }
+        if (!errors.hasFieldErrors("language") && service.getLanguageHandler(rule.getLanguage()) == null)
+            errors.rejectValue("language","error.invalid", "Choose an available rule language");
+        if (errors.hasErrors()) {
 			model.addAttribute("rule", rule);
 			return null;
 		} else {

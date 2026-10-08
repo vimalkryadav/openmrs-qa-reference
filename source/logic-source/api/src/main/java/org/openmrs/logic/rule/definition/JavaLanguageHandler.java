@@ -13,11 +13,8 @@
  */
 package org.openmrs.logic.rule.definition;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Date;
 
 import org.openmrs.api.AdministrationService;
 import org.openmrs.api.context.Context;
@@ -54,21 +51,22 @@ public class JavaLanguageHandler extends CompilableLanguageHandler {
 		if (!javaFile.getParentFile().exists())
 			javaFile.getParentFile().mkdirs();
 		
-		Date modifiedDate = logicRule.getDateChanged();
-		if (modifiedDate == null) {
-			modifiedDate = logicRule.getDateCreated();
-		}
-		
-		// only compile when the java file is not exist or the concept derived is updated after the source file last modified
-		if (!javaFile.exists() || modifiedDate.after(new Date(javaFile.lastModified()))) {
-			try (BufferedWriter writer = new BufferedWriter(new FileWriter(javaFile))) {
-				
-				writer.write(logicRule.getRuleContent());
-			}
-			catch (IOException e) {
-				log.error("Failed saving java rule file ...", e);
-			}
-		}
+
+        try {
+            String source = logicRule.getRuleContent();
+            String existing = javaFile.exists()
+                    ? new String(java.nio.file.Files.readAllBytes(javaFile.toPath()), java.nio.charset.StandardCharsets.UTF_8) : null;
+            // Frozen domain time cannot be compared with filesystem modification times.
+            if (!source.equals(existing)) {
+                java.nio.file.Files.write(javaFile.toPath(), source.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                String compiledDirectory = as.getGlobalProperty(LogicConstants.RULE_DEFAULT_CLASS_FOLDER);
+                File compiledFile = new File(OpenmrsUtil.getDirectoryInApplicationDataDirectory(compiledDirectory), path + ".class");
+                java.nio.file.Files.deleteIfExists(compiledFile.toPath());
+            }
+        } catch (IOException failure) {
+            throw new org.openmrs.logic.LogicException("Unable to prepare Java rule source", failure);
+        }
+
 	}
 
 }

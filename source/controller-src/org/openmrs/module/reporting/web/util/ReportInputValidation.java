@@ -18,6 +18,36 @@ import org.openmrs.module.reporting.report.ReportRequest.Status;
 public final class ReportInputValidation {
     private ReportInputValidation() { }
 
+    /** Read metadata before the legacy XSS wrapper encodes it; JSP sinks escape on output. */
+    public static String metadataText(javax.servlet.http.HttpServletRequest request, String field) {
+        javax.servlet.ServletRequest original = request;
+        while (original instanceof javax.servlet.ServletRequestWrapper)
+            original = ((javax.servlet.ServletRequestWrapper) original).getRequest();
+        String value = original.getParameter(field);
+        return value == null ? "" : value;
+    }
+
+    public static String metadataName(String value) {
+        String name = value == null ? "" : value.trim();
+        if (name.isEmpty()) throw new IllegalArgumentException("Name is required");
+        if (name.length() > 255) throw new IllegalArgumentException("Name must be 255 characters or fewer");
+        return name;
+    }
+
+    public static String scheduleError(String value) {
+        if (value == null || value.trim().isEmpty()) return "Enter a cron expression";
+        if (value.length() > 100) return "Cron expression must be 100 characters or fewer";
+        return org.quartz.CronExpression.isValidExpression(value) ? null : "Enter a valid cron expression";
+    }
+
+    public static org.springframework.web.servlet.ModelAndViewDefiningException missing(String message) {
+        org.springframework.web.servlet.ModelAndView view = new org.springframework.web.servlet.ModelAndView(
+                "/module/reporting/reports/notFound");
+        view.addObject("message", message);
+        view.setStatus(org.springframework.http.HttpStatus.NOT_FOUND);
+        return new org.springframework.web.servlet.ModelAndViewDefiningException(view);
+    }
+
     public static Object parse(Object value, Class<?> type, Class<? extends Collection> collectionType) {
         if (type != Date.class) return WidgetUtil.parseInput(value, type, collectionType);
         if (collectionType != null) {

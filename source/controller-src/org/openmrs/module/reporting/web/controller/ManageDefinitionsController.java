@@ -55,12 +55,17 @@ public class ManageDefinitionsController {
 	 * Manage Definitions Controller
 	 */
 	@RequestMapping("/module/reporting/definition/manageDefinitions.form")
-	public void manageDefinitions(
-			@RequestParam(required=true, value="type") Class<? extends Definition> type,
+	public String manageDefinitions(
+			@RequestParam(required=true, value="type") String typeName,
 			@RequestParam(required=false, value="includeRetired") Boolean includeRetired,
 			ModelMap model) {
-		
-		List<Class<? extends Definition>> allTypes = new ArrayList<Class<? extends Definition>>();
+        Class<? extends Definition> type;
+        try { type = org.openmrs.api.context.Context.loadClass(typeName).asSubclass(Definition.class); }
+        catch (Exception invalid) {
+            model.addAttribute("message", "Unknown definition type. Choose a list from Report Administration.");
+            return "/module/reporting/reports/notFound";
+        }
+        List<Class<? extends Definition>> allTypes = new ArrayList<Class<? extends Definition>>();
 		if (DataDefinition.class.isAssignableFrom(type)) {
 			allTypes.add(PersonDataDefinition.class);
 			allTypes.add(PatientDataDefinition.class);
@@ -110,7 +115,10 @@ public class ManageDefinitionsController {
 
 		model.addAttribute("type", type);
 		model.addAttribute("definitions", defsByType);
-		model.addAttribute("allDefinitions", definitions);
+		List<Definition> visible = new ArrayList<Definition>();
+        for (List<Definition> entries : defsByType.values()) visible.addAll(entries);
+        model.addAttribute("allDefinitions", visible);
+        return "/module/reporting/definition/manageDefinitions";
 	}
 	
 	/**
@@ -132,7 +140,11 @@ public class ManageDefinitionsController {
 		}
 		else {
 			Definition d = DefinitionContext.getDefinitionService(type).getDefinitionByUuid(uuid);
-			return "redirect:" + handler.getEditUrl(d);
+			if (d == null) {
+                model.addAttribute("message", "Cohort query or definition not found. Open it from Report Administration.");
+                return "/module/reporting/reports/notFound";
+            }
+            return "redirect:" + handler.getEditUrl(d);
 		}
 	}
 	
@@ -143,9 +155,10 @@ public class ManageDefinitionsController {
 	public String purgeDefinition(
 			@RequestParam(required=true, value="type") Class<? extends Definition> type,
 			@RequestParam(required=true, value="uuid") String uuid,
-			ModelMap model) {
+			ModelMap model, javax.servlet.http.HttpServletRequest request) {
 
 		DefinitionContext.purgeDefinition(type, uuid);
+        request.getSession().setAttribute(org.openmrs.web.WebConstants.OPENMRS_MSG_ATTR, "Definition deleted");
 		return "redirect:manageDefinitions.form?type="+type.getName();
 	}
 	
