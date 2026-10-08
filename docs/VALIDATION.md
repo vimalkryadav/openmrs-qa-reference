@@ -3,13 +3,14 @@
 ## Logic Admin repairs — 2026-10-08
 
 The four Admin Logic entry points and their AJAX handlers now resolve on the
-native reference. `node tests/headless-logic-qa.mjs` passed all **17** grouped
+native reference. `node tests/headless-logic-qa.mjs` passed all **18** grouped
 checks using headless Chromium: list/search/pagination; token create, read,
 rename, configured person-field evaluation and deletion; required-field errors;
 Groovy literal source and description round-trips; rule rename; Java rule
 compilation and changed-source re-evaluation with the frozen clock; friendly
 invalid-expression feedback; patient reselection; autocomplete; setup-property
-cancel; setup network failure; and successful local default registration.
+cancel; setup network failure; successful local default registration; and the
+unsaved-setting guard during real save, reload, cancel and failed-save flows.
 
 `./tests/run-reference-batch.sh` passes 93 assertions (64 existing, 16 Reports,
 13 Logic). The Logic assertions cover lossless raw source input, immutable alias
@@ -23,9 +24,12 @@ Fixtures use `QA_LOGIC_REGRESSION_*`. The setup test snapshots all existing toke
 rows and the concept-class property, invokes the real Run Now button, verifies
 those rows/property are unchanged, and removes only newly created token IDs.
 Cleanup proved the original **433 tokens / zero custom rules** unchanged and
-removed generated Java files for owned rules. No seeded clinical row or setting
-was changed. Setup adds the stock HIV POSITIVE registration while running;
-the test removes that owned addition afterward. An empty result for this stock
+removed generated Java files for owned rules. No seeded clinical row was changed. The filter save test temporarily edits
+only the concept-class property and restores its exact original NULL through DWR;
+initialization never runs while that temporary filter is set. Setup adds the stock HIV POSITIVE registration while running;
+the test removes that owned addition afterward. Run Now stays disabled while
+settings are unsaved or saving. A failed/timeout save retains the edited value;
+cancelling returns the latest successful saved value. An empty result for this stock
 rule is not clinical proof: its dependency concepts and observations must exist.
 
 Read-only comparison with `~/Downloads/data.db` found equal

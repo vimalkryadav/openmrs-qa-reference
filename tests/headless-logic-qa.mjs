@@ -136,8 +136,46 @@ try {
   });
   await check('setup-property-cancel-and-network-error',async()=>{
     await go('init.form');const field=page.locator('input[id^="gp_"]');const original=await field.inputValue();
-    await field.fill('Test');await field.press('End');await page.getByRole('button',{name:'Cancel',exact:true}).click();await expect(field).toHaveValue(original);
+    await field.fill('Test');await expect(page.locator('#runnow')).toBeDisabled();
+    await expect(page.locator('#settingsStatus')).toContainText('Save or cancel');
+    await page.getByRole('button',{name:'Cancel',exact:true}).click();await expect(field).toHaveValue(original);
+    await expect(page.locator('#runnow')).toBeEnabled();
     await context.setOffline(true);await page.locator('#runnow').click();await expect(page.locator('#statusText')).toContainText('Could not initialize');await context.setOffline(false);
+  });
+  await check('setup-property-save-guard',async()=>{
+    const property='logic.defaultTokens.conceptClasses';
+    const before=JSON.parse(db("SELECT JSON_OBJECT('value',property_value) FROM global_property WHERE property='"+property+"'"));
+    const next=db('SELECT name FROM concept_class WHERE retired=0 ORDER BY concept_class_id LIMIT 1');
+    let release;
+    const held=new Promise(resolve=>{release=resolve;});
+    const route='**/DWRAdministrationService.setGlobalProperty.dwr';
+    await page.route(route,async request=>{await held;await request.continue();});
+    try {
+      await go('init.form');const field=page.locator('input[id^="gp_"]');
+      await field.fill(next);await expect(page.locator('#runnow')).toBeDisabled();
+      await page.getByRole('button',{name:'Save',exact:true}).click();
+      await expect(field).toBeDisabled();await expect(page.locator('#runnow')).toBeDisabled();
+      release();await expect(page.locator('#runnow')).toBeEnabled();
+      expect(JSON.parse(db("SELECT JSON_OBJECT('value',property_value) FROM global_property WHERE property='"+property+"'")).value).toBe(next);
+      await field.fill(next+' changed');await page.getByRole('button',{name:'Cancel',exact:true}).click();
+      await expect(field).toHaveValue(next);await expect(page.locator('#runnow')).toBeEnabled();
+      await page.reload();await expect(page.locator('input[id^="gp_"]')).toHaveValue(next);
+      await context.setOffline(true);await page.locator('input[id^="gp_"]').fill(next+' unsaved');
+      await page.getByRole('button',{name:'Save',exact:true}).click();
+      await expect(page.locator('#settingsStatus')).toContainText('Could not save settings',{timeout:15000});
+      await expect(page.locator('#runnow')).toBeDisabled();
+      await context.setOffline(false);await page.getByRole('button',{name:'Cancel',exact:true}).click();
+      await expect(page.locator('input[id^="gp_"]')).toHaveValue(next);
+      await expect(page.locator('#runnow')).toBeEnabled();
+    } finally {
+      release();await context.setOffline(false);await page.unroute(route);
+      await page.evaluate(({property,value})=>new Promise((resolve,reject)=>{
+        DWRAdministrationService.setGlobalProperty(property,value,function(){resolve();});
+        setTimeout(()=>reject(new Error('Timed out restoring owned property edit')),10000);
+      }),{property,value:before.value});
+      expect(JSON.parse(db("SELECT JSON_OBJECT('value',property_value) FROM global_property WHERE property='"+property+"'")).value).toBe(before.value);
+      await page.reload();await expect(page.locator('#runnow')).toBeEnabled();
+    }
   });
   await check('rule-delete-removes-token',async()=>{
     await go('editRuleDefinition.form?id='+owned.rule);await page.getByRole('button',{name:'Delete this Rule',exact:true}).click();await page.waitForURL('**/manageRuleDefinitions.list');
