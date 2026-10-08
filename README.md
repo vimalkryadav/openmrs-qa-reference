@@ -18,9 +18,10 @@ These commands create no Docker images and push nothing. Do not run `start` if t
 
 ## Published image status
 
-- Last published, portable release: `2026-10-07-legacy-qa`. Its four multiarchitecture image digests are in `releases/2026-10-07-legacy-qa.json`.
-- Reports fixes were compiled and tested in local containers before image work was paused. **No Reports release was published.** Do not attempt to pull `2026-10-07-reports-flows` from the public registry.
-- The newest source fix bounds Logic/Patient dataset previews to 50 patients and uses a monotonic evaluation timer. It is now compiled and verified in the **native local runtime**, but is not in a published image. It deliberately does not impose a patient cohort on scalar SQL datasets: stock Reporting returns an empty result when filtered SQL has no `patient_id` column.
+- Current QA release: `2026-10-08-module-parity-r1`, including the merged Reports, offline OCL/OWA and Calculation fixes. Immutable amd64/arm64 digests, source commit and validation details are in `releases/2026-10-08-module-parity-r1.json`.
+- The backend Dockerfile explicitly preserves executable startup permissions. This was verified through actual container startup, which native source checks alone did not cover.
+- The database and gateway reuse the pinned large-data baseline. Fresh volumes have the verified seed counts and 33 report requests; existing QA volumes are preserved rather than reset.
+- Previous portable release: `2026-10-07-legacy-qa`. Its manifest remains available for rollback.
 - Image builds, publication and deployment happen only when explicitly requested. A Git push does not trigger them. The workflow has only `workflow_dispatch` and defaults to validation without publication.
 
 ## QA: update to an already-published release
@@ -31,12 +32,12 @@ Install Docker Desktop with at least 16 GB assigned memory. The backend has an 8
 git clone https://github.com/vimalkryadav/openmrs-qa-reference.git
 cd openmrs-qa-reference
 git pull --ff-only
-scripts/qa-update.sh 2026-10-07-legacy-qa
+scripts/qa-update.sh 2026-10-08-module-parity-r1
 ```
 
 The update script runs `docker compose pull`, then `up -d --no-build`. It uses project `openmrs-qa`, preserving the existing `openmrs-qa_db-data` and `openmrs-qa_openmrs-data` volumes. It never runs `down -v`. First initialization creates those volumes from the pinned images. On an existing laptop, check the project and volume names before adopting a different stack. A manual local Reports override is not automatically used by this script: select a published release consciously.
 
-Login remains `admin` / `Admin123`; port remains **8090**; the frozen clock remains **2026-09-29 09:00 UTC**. Fixed demonstration DB credentials are embedded in the pinned baseline, not private service credentials. Do not add real credentials to Git.
+On first O3 login, select a location and click **Confirm** if prompted. Login remains `admin` / `Admin123`; port remains **8090**; the frozen clock remains **2026-09-29 09:00 UTC**. Fixed demonstration DB credentials are embedded in the pinned baseline, not private service credentials. Do not add real credentials to Git.
 
 `git pull` updates source and scripts only. It cannot replace compiled modules or a running frontend. Developers must explicitly prepare and release images before QA can pull the new code. Roll back application images using the same update command with a previously published tag. This preserves data; SQL/data upgrades are not undone by image rollback. Take a local volume backup before an authorized DB upgrade and keep that backup outside this repository.
 

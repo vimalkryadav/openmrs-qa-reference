@@ -11,7 +11,7 @@ name: openmrs-qa
 
 services:
   db:
-    image: public.ecr.aws/x9d4j8f0/openmrs-qa-db:${QA_TAG:-2026-10-07-legacy-qa}
+    image: public.ecr.aws/x9d4j8f0/openmrs-qa-db:${QA_TAG:-2026-10-08-module-parity-r1}
     # The image's entrypoint pins the database clock to OPENMRS_DEMO_TIME (set in the image).
     # Inherit the image healthcheck, which waits for the compatibility SQL patch.
     mem_limit: "${OPENMRS_DB_MEMORY:-3g}"
@@ -21,7 +21,7 @@ services:
     restart: unless-stopped
 
   backend:
-    image: public.ecr.aws/x9d4j8f0/openmrs-qa-backend:${QA_TAG:-2026-10-07-legacy-qa}
+    image: public.ecr.aws/x9d4j8f0/openmrs-qa-backend:${QA_TAG:-2026-10-08-module-parity-r1}
     # Leave room outside the 8 GiB Java heap for native memory.
     mem_limit: "${OPENMRS_BACKEND_MEMORY:-10g}"
     environment:
@@ -42,7 +42,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: public.ecr.aws/x9d4j8f0/openmrs-qa-frontend:${QA_TAG:-2026-10-07-legacy-qa}
+    image: public.ecr.aws/x9d4j8f0/openmrs-qa-frontend:${QA_TAG:-2026-10-08-module-parity-r1}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/"]
       interval: 10s
@@ -51,7 +51,7 @@ services:
     restart: unless-stopped
 
   gateway:
-    image: public.ecr.aws/x9d4j8f0/openmrs-qa-gateway:${QA_TAG:-2026-10-07-legacy-qa}
+    image: public.ecr.aws/x9d4j8f0/openmrs-qa-gateway:${QA_TAG:-2026-10-08-module-parity-r1}
     depends_on:
       backend:
         condition: service_healthy
