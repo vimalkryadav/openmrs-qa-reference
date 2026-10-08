@@ -1,4 +1,57 @@
-# Validation evidence (2026-10-07)
+# Validation evidence
+
+## Reports QA corrections — 2026-10-08
+
+The native reference at `http://localhost:8090/openmrs` was compiled from the
+`fix/reports-qa-findings` worktree and replayed with headless Chromium. No Docker
+image was built. The existing seeded database, `admin` credentials, port 8090 and
+frozen `2026-09-29 09:00 UTC` clock were retained.
+
+Validation passed:
+
+- `python3 scripts/validate.py` and `git diff --check`.
+- `python3 scripts/prepare-backend.py --native`: all source groups compile and
+  patched Reporting/Legacy UI modules assemble.
+- `./tests/run-reference-batch.sh`: 64 existing assertions plus 16 new metadata,
+  date and cron validation assertions.
+- `node tests/headless-reporting-qa.mjs`: 26/26 grouped UI checks. This covers the
+  create-page title (002), numeric creation-date sorting (003), unsaved-preview
+  guidance (004), deletion feedback (005/018), visible dataset totals (006),
+  preserved mapping keys (007), report-design and history name sorting (008/019),
+  period-column validation and labels (009/010), unavailable-error fallback (012),
+  failed-request timestamps (015), processing status (016), history copy/filter
+  controls (021/022/023), saved description persistence (024), scheduling help,
+  invalid input, date round-trip, search and cron validation (025/026/027/028/038),
+  missing-record guidance (030/039/040/041), name bounds (031), lossless metadata
+  and trimming through two saves (033/036), 255-character report layout (034),
+  invalid run-date handling (037), and retained form values after network loss
+  (042).
+- Separate headless header checks passed for a browser-only long-name fixture at
+  683px and Spanish/Italian locale links (043/044). The server profile was not
+  changed. The Legacy UI JSP override uses a distinct JSTL function prefix to
+  avoid colliding with Legacy UI's own `fn` tag library.
+
+The suite creates only `QA_REPORTS_REGRESSION_*` definitions and an owned report
+request. It removes them in `finally`, including embedded Period Indicator
+datasets. A read-only database check after the final run found zero definitions
+with that prefix and the original 33 report requests. Screenshots, results and
+UUID/cleanup ledgers are generated under ignored `test-results/reporting-qa/`.
+Use `REFERENCE_ORIGIN` and `REPORTS_EVIDENCE` to change the target and output folder.
+The default target must have the matching QA seed for the read-only seeded
+failed/processing-history checks.
+
+The request wrapper change is restricted to metadata name/description fields;
+the global XSS filter stays enabled. JSP output and report logs escape text. The
+browser round-trip checks literal ampersands, apostrophes, quotes, angle-bracket
+text and the literal entity `&amp;`. Reporting ships DataTables 1.5 beta, so its
+sort overrides deliberately use supported `aoColumns`, not newer `aoColumnDefs`.
+
+This release does not claim to retest arbitrary custom evaluators, unbounded
+patient reports, external processors or all unrelated OpenMRS modules. The
+original audit did not reproduce every submitted defect on the reference;
+previous successful renderer and bounded-report evidence below remains relevant.
+
+## Earlier renderer and native-runtime validation — 2026-10-07
 
 Before the image-build pause, the local reference backend and frontend were rebuilt and tested at port 8090. Nothing from this Reports release was published. A subsequent native-runtime migration compiled and deployed the Logic/Patient dataset preview fix. The final native worktree headless suite passed10/10, including an exact50-row preview assertion and frozen browser UTC time; see `native-validation.json` and `NATIVE.md`. No Docker image was built for that migration.
 

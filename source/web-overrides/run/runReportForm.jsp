@@ -8,6 +8,22 @@ var fixedValueElementIds = new Array();
 var inputsToToggle = new Array();
 jQuery(document).ready(
     function(){
+        jQuery('#requestReportForm').submit(function(event){
+            event.preventDefault();
+            var form=this, request;
+            var button=jQuery(form).find('input[type=submit]').prop('disabled',true);
+            jQuery('#requestReportError').hide();
+            jQuery.ajax({url:location.href,type:'POST',data:jQuery(form).serialize(),dataType:'text',
+                xhr:function(){request=new XMLHttpRequest();return request;},
+                success:function(html){
+                    if(request.responseURL && request.responseURL.indexOf('reportHistoryOpen.form') >= 0) { location.href=request.responseURL; return; }
+                    document.open();document.write(html);document.close();
+                },error:function(xhr){
+                    button.prop('disabled',false);
+                    jQuery('#requestReportError').text(xhr.status === 0 ? 'Could not reach the server. Check your connection and try again.' : 'Could not request this report. Check the parameters and try again.').show();
+                }});
+            return false;
+        });
         for( var i in fixedValueElementIds ){
             jQuery( "#" + fixedValueElementIds[ i ] ).addClass( fixedValueElementIds[ i ] );
         }
@@ -49,7 +65,7 @@ function toggleInputElements( idPrefix ){
                                 <spring:hasBindErrors name="report">
                                     <c:forEach var="error" items="${errors.globalErrors}"><div class="error" role="alert"><c:out value="${error.defaultMessage}"/></div></c:forEach>
                                 </spring:hasBindErrors>
-                                <form method="post">
+                                <form id="requestReportForm" method="post"><div id="requestReportError" class="error" role="alert" style="display:none"></div>
                                     <table style="padding:10px;">
                                         <c:forEach var="parameter" items="${report.reportDefinition.parameters}">
                                             <script type="text/javascript">

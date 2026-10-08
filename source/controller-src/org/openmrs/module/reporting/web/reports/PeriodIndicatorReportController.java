@@ -97,8 +97,18 @@ public class PeriodIndicatorReportController {
 							@RequestParam(value="indicator", required=false) CohortIndicator indicator,
 							@RequestParam(value="cohortQuery", required=false) CohortDefinition cohortDefinition,
 							@RequestParam(value = "createFromCohortQuery", required = false) String createFromCohortQuery,
-							WebRequest request) {
+							WebRequest request, javax.servlet.http.HttpServletResponse response) throws java.io.IOException {
 		
+        String error = !StringUtils.hasText(key) ? "Indicator Number is required"
+                : key.length() > 10 ? "Indicator Number must be 10 characters or fewer"
+                : !StringUtils.hasText(displayName) ? "Label is required"
+                : createFromCohortQuery != null && cohortDefinition == null ? "Please choose a cohort query"
+                : createFromCohortQuery == null && indicator == null && index == null ? "Please choose an indicator" : null;
+        if (error != null) {
+            response.setStatus(400); response.setContentType("text/plain;charset=UTF-8");
+            response.getWriter().write(error); return null;
+        }
+        key = key.trim();
 		PeriodIndicatorReportDefinition report = (PeriodIndicatorReportDefinition) Context.getService(ReportDefinitionService.class).getDefinitionByUuid(uuid);
 		PeriodIndicatorReportUtil.ensureDataSetDefinition(report);
 		CohortIndicatorDataSetDefinition cidsd = report.getIndicatorDataSetDefinition();

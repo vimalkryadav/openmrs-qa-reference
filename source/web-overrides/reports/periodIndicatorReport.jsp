@@ -4,16 +4,21 @@
 		<c:choose>
 			<c:when test="${report.id == null}">
 
-				<b class="boxHeader"<spring:message code="reporting.>CreatePeriodIndicatorReport" /></b>
+				<h1>Create Period Indicator Report</h1><b class="boxHeader">Create New Report</b>
 				<div class="box">
 					<openmrs:portlet url="baseMetadata" id="baseMetadata" moduleId="reporting" parameters="type=org.openmrs.module.reporting.report.definition.PeriodIndicatorReportDefinition|size=380|mode=edit|dialog=false|cancelUrl=manageReports.form|successUrl=periodIndicatorReport.form?uuid=uuid" />
 				</div>
 
-			</c:when>		
+			</c:when>
 			<c:otherwise>
-			
+
 				<script type="text/javascript">
 					$j(document).ready(function() {
+                        $j('#labelField').bind('input', function(){ $j(this).data('userEdited', true); });
+                        $j('#columnForm').submit(function(event) {
+                            var message = !$j('#keyField').val().trim() ? 'Indicator Number is required' : !$j('#labelField').val().trim() ? 'Label is required' : $j('#createFromCohortQueryCheckbox').is(':checked') && !$j('#cohortQueryField').val() ? 'Please choose a cohort query' : !$j('#createFromCohortQueryCheckbox').is(':checked') && !$j('#indicatorField').val() && !$j('#indexField').val() ? 'Please choose an indicator' : '';
+                            if(message) { event.preventDefault(); $j('#columnError').text(message).show(); }
+                        });
 						$j('#addColumnDialog').dialog({
 							autoOpen: false,
 							draggable: false,
@@ -21,15 +26,16 @@
 							show: null,
 							width: '90%',
 							modal: true,
-							title: 'Save column'											
+							title: 'Save column'
 						});
-						
+
 						$j('.addColumnButton').click(function() {
 							$j('#embeddedIndicatorOption').remove();
                             $j('#createFromCohortQueryCheckbox').prop('checked', false).trigger('change');
                             $j('#indexField').val('');
 							$j('#keyField').val('');
-							$j('#labelField').val('');
+							$j('#labelField').val('').data('userEdited', false);
+                            $j('#columnError').hide();
 							$j('#indicatorField').val('');
 							$j('#cohortQueryField').val('');
 							<c:forEach var="dim" varStatus="dimStatus" items="${report.indicatorDataSetDefinition.dimensions}">
@@ -51,7 +57,7 @@
                                 }
                                 </c:forEach>
                             }
-                            $j("#labelField").val(labelFieldValNew);
+                            if (!$j("#labelField").data('userEdited')) $j("#labelField").val(labelFieldValNew);
                         }
 
                         $j('#indicatorField').change(updateIndicatorLabel);
@@ -64,7 +70,7 @@
 						$j('#cancelDialogButton').click(function() {
 							$j('#addColumnDialog').dialog('close');
 						});
-						
+
 						$j('#dimensions-table').dataTable({
 							"bPaginate": false,
 							"bLengthChange": false,
@@ -74,15 +80,15 @@
 							"bAutoWidth": false
 						} );
 						$j('#previewButton').click(function(event) {
-							showReportingDialog({ 
-								title: 'Preview Report', 
+							showReportingDialog({
+								title: 'Preview Report',
 								url: '<c:url value="/module/reporting/parameters/queryParameter.form"/>?uuid=${report.uuid}&type=${report['class'].name}'
 							});
 						}).height(32);
 						$j('#closeButton').click(function(event) {
 							window.location = 'manageReports.form';
 						}).height(32);
-						
+
 						<c:forEach var="dim" varStatus="dimStatus" items="${report.indicatorDataSetDefinition.dimensions}">
 							$j("#${model.portletUUID}EditDimLink${dimStatus.index}").click(function(event){
 								showReportingDialog({
@@ -92,13 +98,13 @@
 								});
 							});
 						</c:forEach>
-						
+
 						<c:forEach var="col" varStatus="colStatus" items="${report.indicatorDataSetDefinition.columns}">
-						
+
 							$j('#editIndicator${colStatus.index}').click(function() {
 								$j('#indexField').val('${colStatus.index}');
 								$j('#keyField').val('${col.name}');
-								$j('#labelField').val('${col.label}');
+								$j('#labelField').val('${rpt:getSafeJsString(col.label)}').data('userEdited', true);
 								$j('#embeddedIndicatorOption').remove();
                                 $j('#createFromCohortQueryCheckbox').prop('checked', false).trigger('change');
                                 $j('#cohortQueryField').val('');
@@ -112,15 +118,15 @@
 								</c:forEach>
 								$j('#addColumnDialog').dialog('open');
 							});
-						
+
 							$j("#deleteIndicator${colStatus.index}").click(function(event){
 								if (confirm("Are you sure you wish to remove column: ${col.name}?")) {
 									document.location.href="periodIndicatorReportRemoveColumn.form?key=${col.name}&uuid=${report.uuid}";
 								}
 							});
-							
+
 						</c:forEach>
-						
+
 						$j('#column-table').dataTable({
 							"bPaginate": true,
 							"iDisplayLength": 15,
@@ -145,7 +151,7 @@
 				</script>
 
 				<div id="addColumnDialog" style="display: none">
-					<form method="post" action="periodIndicatorReportSaveColumn.form">
+					<form id="columnForm" method="post" action="periodIndicatorReportSaveColumn.form"><div id="columnError" class="error" role="alert" style="display:none"></div>
 						<input type="hidden" name="uuid" value="${report.uuid}"/>
 						<input type="hidden" id="indexField" name="index" value=""/>
 						<table>
@@ -221,8 +227,8 @@
 						</table>
 					</form>
 				</div>
-			
-				
+
+
 				<table style="width:100%;">
 					<tr valign="top">
 						<td style="width:30%;">
@@ -259,18 +265,18 @@
 									<tfoot>
 										<tr>
 											<td colspan="3">
-												<openmrs:portlet url="mappedProperty" id="newDim" moduleId="reporting" 
+												<openmrs:portlet url="mappedProperty" id="newDim" moduleId="reporting"
 															 parameters="type=${report.indicatorDataSetDefinition['class'].name}|uuid=${report.indicatorDataSetDefinition.uuid}|property=dimensions|mode=add|label=Add Dimension" />
 											</td>
 										</tr>
 									</tfoot>
 								</table>
 							</div>
-					
+
 							<br/>
-							<openmrs:portlet url="mappedProperty" id="baseCohortDefinition" moduleId="reporting" 
+							<openmrs:portlet url="mappedProperty" id="baseCohortDefinition" moduleId="reporting"
 											 parameters="type=${report['class'].name}|uuid=${report.uuid}|property=baseCohortDefinition|label=Filter|nullValueLabel=All Patients" />
-							
+
 							<br/>
 							<button id="previewButton">
 								<img src="<c:url value="/images/play.gif"/>" border="0"/>
@@ -328,7 +334,7 @@
 						</td>
 					</tr>
 				</table>
-			
+
 			</c:otherwise>
 		</c:choose>
 

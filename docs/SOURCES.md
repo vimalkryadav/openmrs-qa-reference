@@ -25,3 +25,19 @@ inside its API JAR; assembly patches both copies so the owned code is the code
 actually loaded. Calculation remains independent of Reporting at class-load time;
 optional saved defaults are read from the provider without adding a reverse module
 dependency.
+
+
+The October Reporting QA fixes extend stock Reporting 2.1.0 JSPs and tag files
+captured from the pinned module under `source/web-overrides/`. Assembly includes
+both `.jsp` and `.tag` overrides. `LogicReportController` preserves the upstream
+row-report creation workflow with validation before persistence. The scoped
+metadata reader recovers raw form text before the legacy request wrapper's HTML
+encoding; its rendering templates escape values at their HTML/JavaScript sinks.
+The global legacy XSS filter is unchanged.
+
+`source/legacyui-web/template/headerFull.jsp` starts from pinned legacyui 2.1.0
+and adds responsive account-header layout and locale-hint rendering. Selected
+Spanish/Italian message overrides live in `source/legacyui-resources/`; assembly
+merges them into the module's bundled properties and registers Italian without
+replacing its other translations. These are source overlays, not generated
+runtime files or a change to the reference clock/authentication settings.
