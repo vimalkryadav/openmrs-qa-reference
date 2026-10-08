@@ -1,5 +1,46 @@
 # Validation evidence
 
+## Logic Admin repairs — 2026-10-08
+
+The four Admin Logic entry points and their AJAX handlers now resolve on the
+native reference. `node tests/headless-logic-qa.mjs` passed all **17** grouped
+checks using headless Chromium: list/search/pagination; token create, read,
+rename, configured person-field evaluation and deletion; required-field errors;
+Groovy literal source and description round-trips; rule rename; Java rule
+compilation and changed-source re-evaluation with the frozen clock; friendly
+invalid-expression feedback; patient reselection; autocomplete; setup-property
+cancel; setup network failure; and successful local default registration.
+
+`./tests/run-reference-batch.sh` passes 93 assertions (64 existing, 16 Reports,
+13 Logic). The Logic assertions cover lossless raw source input, immutable alias
+criteria including nested transforms and comparison literals, and real database
+column bounds. The existing Reports headless suite was replayed after the Logic
+changes and still passes all 26 groups. Native compilation, source validation,
+JavaScript syntax and whitespace checks pass. Evidence is generated under
+ignored `test-results/logic-qa/` and `test-results/reporting-qa/`.
+
+Fixtures use `QA_LOGIC_REGRESSION_*`. The setup test snapshots all existing token
+rows and the concept-class property, invokes the real Run Now button, verifies
+those rows/property are unchanged, and removes only newly created token IDs.
+Cleanup proved the original **433 tokens / zero custom rules** unchanged and
+removed generated Java files for owned rules. No seeded clinical row or setting
+was changed. Setup adds the stock HIV POSITIVE registration while running;
+the test removes that owned addition afterward. An empty result for this stock
+rule is not clinical proof: its dependency concepts and observations must exist.
+
+Read-only comparison with `~/Downloads/data.db` found equal
+counts in the running reference: 1,392,354 people, 1,383,925 patients, 8,429
+providers, 2,218,380 observations, 388,980 encounters, 935 cohorts, 33 report
+requests and six serialized definitions. The canonical SQLite file has no Logic
+tables; the reference's 433 registrations are module compatibility metadata.
+Counts demonstrate the checked baseline alignment, not a full row hash audit.
+
+Seeded patient reads also verified whole encounter collections as comma-joined
+results and local program enrollment/completion/state results. No external API
+was called. Arbitrary administrator-authored Java/Groovy programs and every
+clinical expression combination are outside this proof; the reference retains
+its upstream JVM runtime. No Docker image was built or published.
+
 ## Reports QA corrections — 2026-10-08
 
 The native reference at `http://localhost:8090/openmrs` was compiled from the

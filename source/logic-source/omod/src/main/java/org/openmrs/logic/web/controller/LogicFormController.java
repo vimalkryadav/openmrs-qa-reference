@@ -1,8 +1,5 @@
 package org.openmrs.logic.web.controller;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -16,6 +13,7 @@ import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
 public class LogicFormController {
@@ -26,37 +24,34 @@ public class LogicFormController {
 	 * @param token The full or partial logic rule token
 	 * @param model The ModelMap to be used by view to render page
 	 */
-	@RequestMapping("/module/logic/tokens")
-	public void tokenAutoComplete(@RequestParam("q") String token, ModelMap model) {
-		if (Context.hasPrivilege("View Administration Functions")) {
-			LogicService logicService = Context.getLogicService();
-			List<String> tokens = logicService.getTokens(token);
-			Collections.sort(tokens);
-			model.addAttribute("listOutput", tokens);
-		} else {
-			model.addAttribute("listOutput", new ArrayList<String>().add(Context.getMessageSourceService().getMessage(
-			    "logic.tester.error.auth")));
-		}
-	}
-	
+    @RequestMapping(value={"/module/logic/tokens", "/module/logic/tokens.form"}, produces="text/plain;charset=UTF-8")
+    @ResponseBody
+    public String tokenAutoComplete(@RequestParam("q") String token) {
+        if (!Context.hasPrivilege("View Administration Functions")) return "";
+        List<String> tokens = Context.getLogicService().getTokens(token);
+        Collections.sort(tokens);
+        return String.join("\n", tokens.subList(0, Math.min(100, tokens.size())));
+    }
+
 	/**
 	 * Place holder for the logic tester form
 	 * 
 	 * @param model The ModelMap to be used by view to render page
 	 */
-	@RequestMapping(value = "/module/logic/logic", method = RequestMethod.GET)
-	public void showTestPage(@RequestParam(required = false, value = "patientId") Integer patientId,
+	@RequestMapping(value = {"/module/logic/logic", "/module/logic/logic.form"}, method = RequestMethod.GET)
+	public String showTestPage(@RequestParam(required = false, value = "patientId") Integer patientId,
 	                         @RequestParam(required = false, value = "token") String token,
 	                         ModelMap modelMap) {
 		modelMap.addAttribute("authenticatedUser", Context.getAuthenticatedUser());
 		modelMap.addAttribute("patientId", patientId == null ? 0 : patientId.intValue());
 		if (token != null)
-			modelMap.addAttribute("token", "&quot;" + token + "&quot;");
+			modelMap.addAttribute("token", '"' + token + '"');
 		
 		if (patientId != null && patientId.intValue() > 0) {
 			Patient patient = Context.getPatientService().getPatient(patientId);
 			modelMap.addAttribute("patient", patient);
 		}
+        return "/module/logic/logic";
 	}
 	
 	/**
@@ -67,19 +62,22 @@ public class LogicFormController {
 	 * @param modelMap The ModelMap to be used by view to render page
 	 * @throws Exception
 	 */
-	@RequestMapping("/module/logic/run")
-	public void runTest(@RequestParam(required = false, value = "patientId") Integer patientId,
+	@RequestMapping({"/module/logic/run", "/module/logic/run.form"})
+	public String runTest(@RequestParam(required = false, value = "patientId") Integer patientId,
 	                    @RequestParam(required = false, value = "patientIdentifier") String patientIdentifier,
 	                    @RequestParam(required = false, value = "patientName") String patientName,
-	                    @RequestParam("logicRule") String logicRule, ModelMap modelMap) throws Exception {
+	                    @RequestParam(value="logicRule", required=false) String logicRule, ModelMap modelMap) throws Exception {
 		
-		if (patientId > 0 && logicRule != null && logicRule.length() > 0) {
+		if (patientId != null && patientId > 0 && logicRule != null && logicRule.length() > 0) {
 			try {
 				Patient patient = Context.getPatientService().getPatient(patientId);
 				
 				LogicService logicService = Context.getLogicService();
 				
-				Result result = logicService.eval(patient.getPatientId(), logicService.parse(logicRule)); // CHICA-1151 pass in patientId instead of patient
+				if (patient == null) throw new LogicException("Patient not found");
+                org.openmrs.logic.LogicCriteria criteria = logicService.parse(logicRule);
+                if (criteria == null) throw new LogicException("Invalid Logic Rule");
+                Result result = logicService.eval(patient.getPatientId(), criteria); // CHICA-1151 pass in patientId instead of patient
 				
 				modelMap.addAttribute("patient", patient);
 				modelMap.addAttribute("logicRule", logicRule);
@@ -89,8 +87,8 @@ public class LogicFormController {
 				modelMap.addAttribute("error", "Invalid Logic Rule.");
 			}
 			catch (Exception e) {
-				modelMap.addAttribute("error", e.toString());
-				modelMap.addAttribute("detail", exception2String(e));
+				org.apache.commons.logging.LogFactory.getLog(getClass()).warn("Logic expression evaluation failed", e);
+                modelMap.addAttribute("error", "Unable to evaluate this expression. Check the token or rule definition.");
 			}
 			
 			modelMap.addAttribute("patientId", patientId);
@@ -100,23 +98,7 @@ public class LogicFormController {
 		} else {
 			modelMap.addAttribute("error", "Invalid parameters");
 		}
+        return "/module/logic/run";
 	}
 	
-	/***********************************************************************************************************
-	 * Formats exception into a printable string
-	 * 
-	 * @param exception Exception
-	 * @return Formated String Stack Trace
-	 */
-	private String exception2String(Exception exception) {
-		try {
-			StringWriter sw = new StringWriter();
-			PrintWriter pw = new PrintWriter(sw);
-			exception.printStackTrace(pw);
-			return "------\r\n" + sw.toString() + "------\r\n";
-		}
-		catch (Exception e2) {
-			return "Error parsing exception2String";
-		}
-	}
 }

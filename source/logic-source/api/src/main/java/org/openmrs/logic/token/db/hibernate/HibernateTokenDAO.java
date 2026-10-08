@@ -95,6 +95,7 @@ public class HibernateTokenDAO implements TokenDAO {
     @Transactional(readOnly=true)
     public List<TokenRegistration> getTokenRegistrations(String query, Integer start, Integer length) {
     	Criteria criteria = makeCriteria(query);
+        criteria.addOrder(Order.asc("id"));
 	    if (start != null)
 			criteria.setFirstResult(start);
 		if (length != null && length > 0)

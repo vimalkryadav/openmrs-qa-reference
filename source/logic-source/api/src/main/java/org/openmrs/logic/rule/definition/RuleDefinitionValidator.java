@@ -22,20 +22,23 @@ import org.springframework.validation.Validator;
  * Validator for {@link RuleDefinition}
  */
 public class RuleDefinitionValidator implements Validator {
-	
+
 	@SuppressWarnings("unchecked")
 	public boolean supports(Class c) {
 		return c.equals(RuleDefinition.class);
 	}
-	
+
 	public void validate(Object obj, Errors errors) {
 		RuleDefinition rule = (RuleDefinition) obj;
-		if (StringUtils.isEmpty(rule.getName()))
+		if (StringUtils.isBlank(rule.getName()))
 			errors.rejectValue("name", "error.null");
-		if (StringUtils.isEmpty(rule.getLanguage()))
+		if (StringUtils.isBlank(rule.getLanguage()))
 			errors.rejectValue("language", "error.null");
-		if (StringUtils.isEmpty(rule.getRuleContent()))
+		if (StringUtils.isBlank(rule.getRuleContent()))
 			errors.rejectValue("ruleContent", "error.null");
-	}
-	
+        if (rule.getName() != null && rule.getName().length() > 255) errors.rejectValue("name","error.invalid", "Use 255 characters or fewer");
+        if (rule.getDescription() != null && rule.getDescription().length() > 1000) errors.rejectValue("description","error.invalid", "Use 1000 characters or fewer");
+        if (rule.getRuleContent() != null && rule.getRuleContent().length() > 2048) errors.rejectValue("ruleContent","error.invalid", "Use 2048 characters or fewer");
+    }
+
 }

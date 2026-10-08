@@ -1,52 +1,40 @@
 package org.openmrs.logic.web.controller;
 
+import java.util.Collections;
+import java.util.Map;
 import org.openmrs.api.context.Context;
-import org.openmrs.logic.init.InitStatusImpl;
-import org.openmrs.logic.init.JSONWriter;
-import org.openmrs.logic.init.ProcessStatus;
 import org.openmrs.logic.util.LogicUtil;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.server.ResponseStatusException;
 
 @Controller
 public class LogicInitController {
-	
-	private JSONWriter jsonWriter = new JSONWriter();
-	
-	private int isInitRunning = ProcessStatus.STATUS_OFF;
-	
-	/**
-	 * Place holder for the default logic rule registration form 
-	 */
-	@RequestMapping("/module/logic/init")
-	public void initialize() {}
+    private volatile boolean running;
 
-	/**
-	 * Returns the current status of the default logic rule registration process
-	 * 
-	 * @param model The ModelMap to be used by view to render page
-	 */
-	@RequestMapping("/module/logic/status")
-	public void initStatus(ModelMap model) {
-		ProcessStatus processStatus = new InitStatusImpl();
-		processStatus.setStatus(isInitRunning);
-		model.addAttribute("jsonOutput", jsonWriter.write(processStatus));
-	}
-	
-	/**
-	 * Runs LogicUtil.registerDefaultRules (called via JQuery/AJAX)
-	 */
-	@RequestMapping("/module/logic/load")
-	public void runInit() {
-		if (Context.hasPrivilege("View Administration Functions")) {
-			isInitRunning = ProcessStatus.STATUS_ON;
-			try {
-				LogicUtil.registerDefaultRules();
-			} finally {
-				isInitRunning = ProcessStatus.STATUS_OFF;
-			}
-		}
-	}
-	
+    @RequestMapping({"/module/logic/init", "/module/logic/init.form"})
+    public String initialize() { return "/module/logic/init"; }
+
+    @RequestMapping({"/module/logic/status", "/module/logic/status.form"})
+    @ResponseBody
+    public Map<String, Boolean> initStatus() {
+        return Collections.singletonMap("running", running);
+    }
+
+    @RequestMapping(value={"/module/logic/load", "/module/logic/load.form"}, method=RequestMethod.POST)
+    @ResponseBody
+    public Map<String, Boolean> runInit() {
+        if (!Context.hasPrivilege("Manage LOGIC"))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Manage LOGIC privilege is required");
+        running = true;
+        try {
+            LogicUtil.registerDefaultRules();
+        } finally {
+            running = false;
+        }
+        return initStatus();
+    }
 }

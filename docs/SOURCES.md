@@ -41,3 +41,17 @@ Spanish/Italian message overrides live in `source/legacyui-resources/`; assembly
 merges them into the module's bundled properties and registers Italian without
 replacing its other translations. These are source overlays, not generated
 runtime files or a change to the reference clock/authentication settings.
+
+The Logic Admin repair extends the already vendored pinned Logic sources rather
+than adding a second module. Explicit Spring route/view mappings restore the
+legacy `.list`/`.form` links. Autocomplete returns the text representation its
+bundled plugin expects, and list pagination has a stable internal-ID order.
+Scoped `LogicWebInput` reads literal rule source/metadata before the legacy HTML
+wrapper; form and result JSPs escape output once. The global XSS filter stays
+unchanged. Alias evaluation copies the criteria before substituting the provider
+key, preserving transforms and the caller's cache identity. Token edits invalidate
+cached old names. Java compilation compares UTF-8 source contents and invalidates
+stale class files instead of comparing audit timestamps against filesystem time;
+annotation processor discovery is disabled for these standalone rule classes.
+The reference still runs its native Java/Groovy handlers; it does not share the
+clone's Python evaluator implementation.

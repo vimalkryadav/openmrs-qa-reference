@@ -123,7 +123,7 @@ public class CompilingClassLoader extends ClassLoader {
 		if (compiler != null) {
 			// java compiler only available on JDK. This part of "IF" will not get executed when we run JUnit test
 			File outputFolder = OpenmrsUtil.getDirectoryInApplicationDataDirectory(ruleClassDir);
-			String[] options = {};
+			String[] options = { "-proc:none" };
 			DiagnosticCollector<JavaFileObject> diagnosticCollector = new DiagnosticCollector<JavaFileObject>();
 			StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnosticCollector, Context.getLocale(), Charset.defaultCharset());
 			fileManager.setLocation(StandardLocation.CLASS_OUTPUT, Arrays.asList(outputFolder));

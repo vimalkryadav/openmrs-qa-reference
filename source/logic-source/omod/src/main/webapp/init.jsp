@@ -14,85 +14,40 @@
 <openmrs:htmlInclude file="/scripts/jquery-ui/css/redmond/jquery-ui-1.7.2.custom.css" />
 
 <script type="text/javascript">
-	var isRunning = false;
-
-	function run() {
-		var isRunning = false;
-		$j("#loading").show();
-
-		$j.ajax({
-			url: "status.form",
-			cache: false,
-			dataType: "json",
-			success: function(data) {
-	    	 	isRunning = data.running;
-			}
-		});
-      
-      if (isRunning == true) {
-   	   $j("#statusText").html("<spring:message code="logic.init.status.running"/>" );
-   	  	followProgress();
-      } else {
-    	   $j("#statusText").html("<spring:message code="logic.init.status.running"/>" );
-    	   $j("#runnow").hide();
-    	  	$j.ajax({
-	 		   type: "POST",
-	 		   cache: false,
-	 		   url: "load.form"
-	 		});
-    	  	followProgress();
-      }
-	}
-
-	function followProgress() {
-		var dots = "";
-	  		
-		var i = setInterval(function() { 
-			$j.ajax({
-				url: "status.form",
-				cache: false,
-				dataType: "json",
-				success: function(data) {
-					var object = eval(data);
-					isRunning = object.running;
-					dots = dots + ". ";
-					if (dots.length > 10) dots = ""; 					
-	            $j("#statusText").html("<spring:message code="logic.init.status.running"/>" + dots);
-
-					if (data.running == false) {
-						$j("#statusText").html('<spring:message code="logic.init.status.complete"/>');
-						$j("#loading").hide();
-						$j("#complete").show();
-						clearInterval(i);
-						return;
-					}
-					}
-			});
-		}, 1500);
-
-	}
-	
-	$j(document).ready(function() {
-		initRunning();
-	});
-
-	function initRunning() {
-		$j.ajax({
-			url: "status.form",
-			cache: false,
-			dataType: "json",
-			success: function(data) {
-		  		if (data.running == true) {
-					$j("#runnow").hide();
-					$j("#loading").show();
-		   	   $j("#statusText").html("<spring:message code="logic.init.status.running"/>" );
-		   	  	followProgress();
-				}
-			}
-		});
-
-	}
-		
+    var progressTimer;
+    function showFailure() {
+        clearTimeout(progressTimer);
+        $j('#loading').hide();
+        $j('#runnow').prop('disabled', false).show();
+        $j('#statusText').text('Could not initialize Logic rules. Check your connection and try again.');
+    }
+    function showComplete() {
+        clearTimeout(progressTimer);
+        $j('#loading').hide();
+        $j('#complete').show();
+        $j('#runnow').prop('disabled', false).show();
+        $j('#statusText').text('<spring:message code="logic.init.status.complete" javaScriptEscape="true"/>');
+    }
+    function followProgress() {
+        $j.ajax({url:'status.form',dataType:'json',cache:false,
+            success:function(data){
+                if (data.running) progressTimer=setTimeout(followProgress,1500);
+                else showComplete();
+            },error:showFailure});
+    }
+    function run() {
+        $j('#runnow').prop('disabled',true);
+        $j('#complete').hide();
+        $j('#loading').show();
+        $j('#statusText').text('<spring:message code="logic.init.status.running" javaScriptEscape="true"/>');
+        $j.ajax({url:'load.form',type:'POST',dataType:'json',cache:false,
+            success:showComplete,error:showFailure});
+    }
+    $j(document).ready(function(){
+        $j.ajax({url:'status.form',dataType:'json',cache:false,
+            success:function(data){if(data.running){$j('#runnow').prop('disabled',true);$j('#loading').show();followProgress();}},
+            error:showFailure});
+    });
 </script>
 
 <h2><spring:message code="logic.init.title"/></h2>
@@ -108,6 +63,6 @@
 <p>
 	<img id="loading" src="${pageContext.request.contextPath}/images/loading.gif" style="display: none; margin-right: 10px;"/>
 	<img id="complete" src="${pageContext.request.contextPath}/images/checkmark.png" style="display: none; margin-right: 10px;"/>
-	<span id="statusText" ></span></p>
+	<span id="statusText" role="status" aria-live="polite"></span></p>
 
 <%@ include file="/WEB-INF/template/footer.jsp"%>

@@ -8,7 +8,7 @@
 
 	$j(document).ready(function() {
 		$j("#showErrorDetails").click( function() {
-			$j("#errorDetails").toggle();	
+			$j("#errorDetails").toggle();
 		});
 	});
 </script>
@@ -24,15 +24,15 @@
 
 <c:choose>
 	<c:when test="${not empty error}">
-		<spring:message code="Hl7inQueue.queueList.errorMessage.header"/>: ${error} 
+		Error: <c:out value="${error}"/>
 		<c:if test="${not empty detail}" >
 			<a id="showErrorDetails" href="#"><spring:message code="logic.tester.error.details"/></a>
-			<br/><br/><div id="errorDetails" style="display: none; font-size: 10px;">${detail}</div>
+			<br/><br/><div id="errorDetails" style="display: none; font-size: 10px;"><c:out value="${detail}"/></div>
 		</c:if>
 	</c:when>
 	<c:otherwise>
-		<strong><spring:message code="Encounter.patient"/>:</strong> ${patient.patientIdentifier}: ${patient.personName}<br/>
-		<strong><spring:message code="SearchResults.resultsFor"/> ${logicRule}:</strong> ${result}<br/>
+		<strong><spring:message code="Encounter.patient"/>:</strong> <c:out value="${patient.patientIdentifier.identifier}"/>: <c:out value="${patient.personName.fullName}"/><br/>
+		<strong><spring:message code="SearchResults.resultsFor"/> <c:out value="${logicRule}"/>:</strong> <c:out value="${result}"/><br/>
 	</c:otherwise>
 </c:choose>
 

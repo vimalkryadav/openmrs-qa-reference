@@ -597,6 +597,38 @@ public class LogicCriteriaImpl implements LogicCriteria {
 		return a.equals(b);
 	}
 	
+
+    /** Resolve a registered alias to the source key without changing the caller's cache key. */
+    public static LogicCriteria forDataSource(LogicCriteria source, String key) {
+        LogicCriteriaImpl copy = new LogicCriteriaImpl(key, source.getLogicParameters());
+        copy.expression = copyExpression(source.getExpression(), key, new boolean[] { false });
+        return copy;
+    }
+
+    private static LogicExpression copyExpression(LogicExpression expression, String key, boolean[] replaced) {
+        LogicExpression copy;
+        if (expression instanceof LogicExpressionUnary) {
+            copy = new LogicExpressionUnary(copyOperand(((LogicExpressionUnary) expression).getOperand(), key, replaced), expression.getOperator());
+        } else {
+            java.util.ArrayList<Operand> operands = ((LogicExpressionBinary) expression).getOperands();
+            copy = new LogicExpressionBinary(copyOperand(operands.get(0), key, replaced),
+                    copyOperand(operands.get(1), key, replaced), expression.getOperator());
+        }
+        copy.setTransform(expression instanceof LogicExpressionUnary
+                ? ((LogicExpressionUnary) expression).getDirectTransform()
+                : ((LogicExpressionBinary) expression).getDirectTransform());
+        return copy;
+    }
+
+    private static Operand copyOperand(Operand operand, String key, boolean[] replaced) {
+        if (operand instanceof LogicExpression) return copyExpression((LogicExpression) operand, key, replaced);
+        if (operand != null && !replaced[0]) {
+            replaced[0] = true;
+            return new OperandText(key);
+        }
+        return operand;
+    }
+
 	/**
 	 * @see org.openmrs.logic.LogicCriteria#getExpression()
 	 */
