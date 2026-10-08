@@ -1,0 +1,168 @@
+{
+  "releaseTag": "2026-10-08-module-parity-r1",
+  "sourceCommit": "2f3495fdcf43006d613cfcebd71e0bf74fab29f5",
+  "mergedApplicationCommit": "566e59cb164e990a2520540a5b2b3637c1255a3e",
+  "clock": "2026-09-29T09:00:00Z",
+  "images": {
+    "db": {
+      "tag": "public.ecr.aws/x9d4j8f0/openmrs-qa-db:2026-10-08-module-parity-r1",
+      "digest": "sha256:b4f6b1834397172579d981f22b8ed78922337dd7ca916a5c4343213edac3d663",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "manifests": [
+        {
+          "mediaType": "application/vnd.oci.image.manifest.v1+json",
+          "digest": "sha256:8d26232ac628df570229709e5dd364a1d7b507726aa165ee214724bc142c239b",
+          "size": 3915,
+          "platform": {
+            "architecture": "amd64",
+            "os": "linux"
+          }
+        },
+        {
+          "mediaType": "application/vnd.oci.image.manifest.v1+json",
+          "digest": "sha256:229b972ea78f7885d8c99d2104c007642eba7f01cad99e9f6fb2cb163c3da4bf",
+          "size": 3915,
+          "platform": {
+            "architecture": "arm64",
+            "os": "linux"
+          }
+        }
+      ]
+    },
+    "backend": {
+      "tag": "public.ecr.aws/x9d4j8f0/openmrs-qa-backend:2026-10-08-module-parity-r1",
+      "digest": "sha256:ec5594d985de429bd1d07994118c7f13738031436c7a574ea73424ea9dd88f5b",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "manifests": [
+        {
+          "mediaType": "application/vnd.oci.image.manifest.v1+json",
+          "digest": "sha256:165cec45993b6b78976d9f61fb799db408b2dabb4f8e788e251f50137bd39a36",
+          "size": 10015,
+          "platform": {
+            "architecture": "amd64",
+            "os": "linux"
+          }
+        },
+        {
+          "mediaType": "application/vnd.oci.image.manifest.v1+json",
+          "digest": "sha256:0de55f8a6f826acd841a2e97727da3316d72ce1b3f8631aa7b642ea2dee128f5",
+          "size": 10015,
+          "platform": {
+            "architecture": "arm64",
+            "os": "linux"
+          }
+        }
+      ]
+    },
+    "frontend": {
+      "tag": "public.ecr.aws/x9d4j8f0/openmrs-qa-frontend:2026-10-08-module-parity-r1",
+      "digest": "sha256:ecc4c3119b3daa4d33a103c274c556d2ca33a758c710c2c6850f523e142fded9",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "manifests": [
+        {
+          "mediaType": "application/vnd.oci.image.manifest.v1+json",
+          "digest": "sha256:fd750468e772f692cd8076ba6df39bd15185ea1bf1e9675d3644f0ef7702935e",
+          "size": 5048,
+          "platform": {
+            "architecture": "amd64",
+            "os": "linux"
+          }
+        },
+        {
+          "mediaType": "application/vnd.oci.image.manifest.v1+json",
+          "digest": "sha256:1b022ebb1136f2578abaadc3ce67d8f1df26a83ed7002fe3c623c3720e7bcc75",
+          "size": 5048,
+          "platform": {
+            "architecture": "arm64",
+            "os": "linux"
+          }
+        }
+      ]
+    },
+    "gateway": {
+      "tag": "public.ecr.aws/x9d4j8f0/openmrs-qa-gateway:2026-10-08-module-parity-r1",
+      "digest": "sha256:d31b58ef0e8b86a675878a3f8da8f752911041378c538cca0c0aef553dc67b9c",
+      "platforms": [
+        "linux/amd64",
+        "linux/arm64"
+      ],
+      "manifests": [
+        {
+          "mediaType": "application/vnd.oci.image.manifest.v1+json",
+          "digest": "sha256:6f07e21f89d518e2e84012c8bb6c23188436ddcdc60f4bf54e03ca10e14130d7",
+          "size": 3506,
+          "platform": {
+            "architecture": "amd64",
+            "os": "linux"
+          }
+        },
+        {
+          "mediaType": "application/vnd.oci.image.manifest.v1+json",
+          "digest": "sha256:dd7bd1c197f490f19a1b9b35f8be8b674e3798c545ad7efc16e24712efff411a",
+          "size": 3506,
+          "platform": {
+            "architecture": "arm64",
+            "os": "linux"
+          }
+        }
+      ]
+    }
+  },
+  "verification": {
+    "runtimePlatform": "linux/arm64",
+    "amd64": "image built and published; full headless runtime suite was on arm64",
+    "headless": {
+      "ocl": {
+        "passed": 12,
+        "failures": 0,
+        "pageErrors": 0
+      },
+      "owa": {
+        "passed": 13,
+        "failures": 0,
+        "pageErrors": 0
+      },
+      "reports": {
+        "passed": 2,
+        "failures": 0,
+        "pageErrors": 0
+      }
+    },
+    "smoke": [
+      "admin login",
+      "Calculation patientId evaluates actual seeded patient",
+      "Calculation invalid input retained",
+      "Reports seeded rows and frontend frozen clock"
+    ],
+    "javaReportsAssertions": 64,
+    "javaCalculationAssertions": 19,
+    "offlineGuards": "passed",
+    "installedModuleHashesMatched": 9,
+    "frontendImportmapMatched": true,
+    "containersHealthy": 4,
+    "freshDatabase": {
+      "person": 1392354,
+      "patient": 1383925,
+      "provider": 8429,
+      "encounter": 388980,
+      "cohort": 935,
+      "reportRequests": 33
+    },
+    "clockVerifiedInDatabaseAndBrowser": true,
+    "fixtureScope": "isolated temporary volumes; existing native servers and DB preserved"
+  },
+  "notes": [
+    "Backend startup script is copied with mode0755; initial candidate with missing executable mode was rejected.",
+    "Fresh O3 browser sessions select a login location before entering Reports/OCL.",
+    "Existing QA volumes are retained; application update does not erase QA history."
+  ]
+}
