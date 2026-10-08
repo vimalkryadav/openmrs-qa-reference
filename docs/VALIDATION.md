@@ -1,6 +1,6 @@
 # Validation evidence (2026-10-07)
 
-Before the image-build pause, the local reference backend and frontend were rebuilt and tested at port 8090. Nothing from this Reports release was published. The current source additionally fixes unbounded Logic/Patient dataset previews; that last change has only compilation coverage and remains undeployed.
+Before the image-build pause, the local reference backend and frontend were rebuilt and tested at port 8090. Nothing from this Reports release was published. A subsequent native-runtime migration compiled and deployed the Logic/Patient dataset preview fix. The final native worktree headless suite passed10/10, including an exact50-row preview assertion and frozen browser UTC time; see `native-validation.json` and `NATIVE.md`. No Docker image was built for that migration.
 
 Headless Chromium Playwright executed nine passing workflows against the existing local reference: fixed-admin login; converter save/reload; malformed converter-map validation; converted data preview; row-per-patient column save/reload; period column label edit preserving its embedded indicator; report run with history reload and an actual CSV browser download; one-time schedule save/reload; SPA Reports dashboard. There were zero page errors, console errors or failed network requests in the completed run. `results.json` includes the explicit blocked dataset-preview case. Owned fixtures and scheduled requests were removed afterward.
 

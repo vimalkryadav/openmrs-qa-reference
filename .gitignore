@@ -16,3 +16,7 @@ __pycache__/
 .DS_Store
 test-results/
 playwright-report/
+
+.native/
+
+.venv/

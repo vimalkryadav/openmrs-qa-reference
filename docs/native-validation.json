@@ -1,0 +1,53 @@
+{
+  "headless": true,
+  "origin": "http://localhost:8090",
+  "results": [
+    {
+      "name": "Legacy login with fixed admin credentials",
+      "status": "passed"
+    },
+    {
+      "name": "Converter edit survives hard reload",
+      "status": "passed"
+    },
+    {
+      "name": "Malformed converter map is rejected without saving",
+      "status": "passed"
+    },
+    {
+      "name": "Converter preview produces database-backed values",
+      "status": "passed"
+    },
+    {
+      "name": "Row-per-patient columns persist and preview exactly 50 patients",
+      "status": "passed"
+    },
+    {
+      "name": "Period label edit preserves embedded indicator",
+      "status": "passed"
+    },
+    {
+      "name": "Run report, reload history and download CSV",
+      "status": "passed"
+    },
+    {
+      "name": "Schedule once persists after reload",
+      "status": "passed"
+    },
+    {
+      "name": "SPA Reports dashboard loads",
+      "status": "passed"
+    },
+    {
+      "name": "Browser wall clock stays frozen",
+      "status": "passed"
+    }
+  ],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "failedRequests": [],
+  "mode": "native Java/Tomcat and nginx; existing MariaDB container",
+  "source_branch": "dev/native-reference-runtime",
+  "dataset_preview_rows": 50,
+  "browser_clock": "2026-09-29T09:00:00.000Z"
+}

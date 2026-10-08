@@ -1,0 +1,205 @@
+package org.openmrs.module.openconceptlab.web.rest.resources;
+
+import io.swagger.models.Model;
+import io.swagger.models.ModelImpl;
+import io.swagger.models.properties.BooleanProperty;
+import io.swagger.models.properties.StringProperty;
+import org.openmrs.api.context.Context;
+import org.apache.commons.lang.StringUtils;
+import org.openmrs.module.webservices.rest.web.response.IllegalRequestException;
+import org.openmrs.module.openconceptlab.ImportService;
+import org.openmrs.module.openconceptlab.Subscription;
+import org.openmrs.module.openconceptlab.ValidationType;
+import org.openmrs.module.openconceptlab.scheduler.UpdateScheduler;
+import org.openmrs.module.openconceptlab.web.rest.controller.OpenConceptLabRestController;
+import org.openmrs.module.webservices.docs.swagger.core.property.EnumProperty;
+import org.openmrs.module.webservices.rest.web.RequestContext;
+import org.openmrs.module.webservices.rest.web.RestConstants;
+import org.openmrs.module.webservices.rest.web.annotation.PropertyGetter;
+import org.openmrs.module.webservices.rest.web.annotation.PropertySetter;
+import org.openmrs.module.webservices.rest.web.annotation.Resource;
+import org.openmrs.module.webservices.rest.web.representation.DefaultRepresentation;
+import org.openmrs.module.webservices.rest.web.representation.FullRepresentation;
+import org.openmrs.module.webservices.rest.web.representation.RefRepresentation;
+import org.openmrs.module.webservices.rest.web.representation.Representation;
+import org.openmrs.module.webservices.rest.web.resource.api.PageableResult;
+import org.openmrs.module.webservices.rest.web.resource.impl.DelegatingCrudResource;
+import org.openmrs.module.webservices.rest.web.resource.impl.DelegatingResourceDescription;
+import org.openmrs.module.webservices.rest.web.resource.impl.NeedsPaging;
+import org.openmrs.module.webservices.rest.web.response.ObjectNotFoundException;
+import org.openmrs.module.webservices.rest.web.response.ResourceDoesNotSupportOperationException;
+import org.openmrs.module.webservices.rest.web.response.ResponseException;
+
+import java.util.Collections;
+
+@Resource(
+        name = RestConstants.VERSION_1 + OpenConceptLabRestController.OPEN_CONCEPT_LAB_REST_NAMESPACE + "/subscription",
+        supportedClass = Subscription.class,
+        supportedOpenmrsVersions = { "1.8.* - 2.*" }
+)
+public class SubscriptionResource extends DelegatingCrudResource<Subscription> {
+
+    @Override
+    public Subscription getByUniqueId(String uniqueId) {
+        Subscription subscription = getImportService().getSubscription();
+        if(subscription.getUuid().equals(uniqueId)){
+            return subscription;
+        } else {
+            throw new ObjectNotFoundException();
+        }
+    }
+
+    @Override
+    protected void delete(Subscription subscription, String reason, RequestContext context) throws ResponseException {
+        getImportService().unsubscribe();
+    }
+
+    @Override
+    public Subscription newDelegate() {
+        return new Subscription();
+    }
+
+    @Override
+    public Subscription save(Subscription subscription) {
+        // Validate before the scheduler writes global properties; upstream URL parsing throws a 500.
+        if (subscription == null || StringUtils.isBlank(subscription.getUrl())) {
+            throw new IllegalRequestException("Subscription URL is required");
+        }
+        if (StringUtils.isBlank(subscription.getToken())) {
+            throw new IllegalRequestException("Token is required");
+        }
+        try {
+            new java.net.URL(subscription.getUrl());
+        } catch (java.net.MalformedURLException invalid) {
+            throw new IllegalRequestException("Wrong url address");
+        }
+        if (!"url".equals(subscription.getUrl())) {
+            UpdateScheduler updateScheduler = getUpdateScheduler();
+            updateScheduler.schedule(subscription);
+        }
+        return getImportService().getSubscription();
+    }
+
+    @Override
+    public DelegatingResourceDescription getCreatableProperties() throws ResourceDoesNotSupportOperationException {
+        DelegatingResourceDescription delegatingResourceDescription = new DelegatingResourceDescription();
+        delegatingResourceDescription.addRequiredProperty("url");
+        delegatingResourceDescription.addRequiredProperty("token");
+        delegatingResourceDescription.addProperty("subscribedToSnapshot");
+        delegatingResourceDescription.addProperty("validationType");
+        return delegatingResourceDescription;
+    }
+
+    @Override
+    public DelegatingResourceDescription getUpdatableProperties() throws ResourceDoesNotSupportOperationException {
+        DelegatingResourceDescription delegatingResourceDescription = new DelegatingResourceDescription();
+        delegatingResourceDescription.addProperty("url");
+        delegatingResourceDescription.addProperty("token");
+        delegatingResourceDescription.addProperty("subscribedToSnapshot");
+        delegatingResourceDescription.addProperty("validationType");
+        return delegatingResourceDescription;
+    }
+
+    @Override
+    public Model getCREATEModel(Representation rep) {
+        ModelImpl model = new ModelImpl();
+        model.property("url", new StringProperty(StringProperty.Format.URL));
+        model.property("token", new StringProperty());
+        model.property("subscribedToSnapshot", new BooleanProperty());
+        model.property("validationType", new EnumProperty(ValidationType.class)).required("url").required("token");
+        return model;
+    }
+
+    @Override
+    public Model getUPDATEModel(Representation rep) {
+        ModelImpl model = (ModelImpl) super.getUPDATEModel(rep);
+        model.property("url", new StringProperty(StringProperty.Format.URL));
+        model.property("token", new StringProperty());
+        model.property("subscribedToSnapshot", new BooleanProperty());
+        model.property("validationType", new EnumProperty(ValidationType.class));
+        return model;
+    }
+
+    @Override
+    public void purge(Subscription delegate, RequestContext context) throws ResponseException {
+        throw new ResourceDoesNotSupportOperationException();
+    }
+
+    @Override
+    public DelegatingResourceDescription getRepresentationDescription(Representation rep) {
+        if (rep instanceof FullRepresentation) {
+            DelegatingResourceDescription description = new DelegatingResourceDescription();
+            description.addProperty("uuid");
+            description.addProperty("url");
+            description.addProperty("token");
+            description.addProperty("subscribedToSnapshot");
+            description.addProperty("validationType");
+            description.addLink("ref", ".?v=" + RestConstants.REPRESENTATION_REF);
+            description.addSelfLink();
+            return description;
+        } else if (rep instanceof DefaultRepresentation) {
+            DelegatingResourceDescription description = new DelegatingResourceDescription();
+            description.addProperty("uuid");
+            description.addProperty("url");
+            description.addProperty("token");
+            description.addLink("full", ".?v=" + RestConstants.REPRESENTATION_FULL);
+            description.addLink("ref", ".?v=" + RestConstants.REPRESENTATION_REF);
+            description.addSelfLink();
+            return description;
+        } else if (rep instanceof RefRepresentation) {
+            DelegatingResourceDescription description = new DelegatingResourceDescription();
+            description.addProperty("uuid");
+            description.addProperty("url");
+            description.addSelfLink();
+            return description;
+        }
+        return null;
+    }
+
+    @Override
+    public Model getGETModel(Representation rep) {
+        ModelImpl model = (ModelImpl) super.getGETModel(rep);
+        if (rep instanceof FullRepresentation) {
+            model.property("uuid", new StringProperty().example("uuid"));
+            model.property("url", new StringProperty(StringProperty.Format.URL));
+            model.property("token", new StringProperty());
+            model.property("subscribedToSnapshot", new BooleanProperty());
+            model.property("validationType", new EnumProperty(ValidationType.class));
+            return model;
+        } else if (rep instanceof DefaultRepresentation) {
+            model.property("uuid", new StringProperty().example("uuid"));
+            model.property("url", new StringProperty(StringProperty.Format.URL));
+            model.property("token", new StringProperty());
+            return model;
+        } else if (rep instanceof RefRepresentation) {
+            DelegatingResourceDescription description = new DelegatingResourceDescription();
+            model.property("uuid", new StringProperty().example("uuid"));
+            model.property("url", new StringProperty(StringProperty.Format.URL));
+            return model;
+        }
+        return null;
+    }
+
+    @Override
+    protected PageableResult doGetAll(RequestContext context) throws ResponseException {
+        return new NeedsPaging<Subscription>(Collections.singletonList(getImportService().getSubscription()), context);
+    }
+
+    @PropertyGetter("subscribedToSnapshot")
+    public boolean getSubscribedToSnapshot(Subscription subscription){
+        return subscription.isSubscribedToSnapshot();
+    }
+
+    @PropertySetter("subscribedToSnapshot")
+    public void setSubscribedToSnapshot(Subscription subscription, Object value){
+        subscription.setSubscribedToSnapshot(Boolean.valueOf(value.toString()));
+    }
+
+    private UpdateScheduler getUpdateScheduler() {
+        return Context.getRegisteredComponent("openconceptlab.updateScheduler", UpdateScheduler.class);
+    }
+
+    private static ImportService getImportService() {
+        return Context.getService(ImportService.class);
+    }
+}

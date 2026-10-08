@@ -1,0 +1,241 @@
+{
+  "verifiedOn": "2026-10-08",
+  "mode": "headless Chromium; native servers; no image build",
+  "scope": "Local OCL ZIP import/history and OWA module package lifecycle",
+  "targets": {
+    "reference": {
+      "origin": "http://localhost:8090",
+      "checksPassed": 25,
+      "externalRequests": 0,
+      "pageErrors": 0,
+      "ownedConceptsRemaining": 0,
+      "ownedImportsRemaining": 0,
+      "ownedAppsRemaining": 0,
+      "owaSettingsRestored": true
+    },
+    "clone": {
+      "origin": "http://localhost:8093",
+      "checksPassed": 25,
+      "externalRequests": 0,
+      "pageErrors": 0,
+      "ownedConceptsRemaining": 0,
+      "ownedImportsRemaining": 0,
+      "ownedAppsRemaining": 0,
+      "owaSettingsRestored": true
+    }
+  },
+  "flows": [
+    {
+      "id": "OCL-01",
+      "name": "O3 local configuration and remote policy",
+      "action": "Open /openmrs/spa/ocl; inspect Subscription and Import tabs.",
+      "expected": "Local configuration is visible; remote import is disabled with its explanation; local file upload remains available.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OCL-02",
+      "name": "Direct remote import rejected without new history",
+      "action": "Send JSON POST to openconceptlab/import and compare history before and after.",
+      "expected": "HTTP 400 explains the offline policy. No import row or item is created.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OCL-03",
+      "name": "Empty selection and invalid ZIP remain usable",
+      "action": "Press Import from file without a file; then upload invalid.zip.",
+      "expected": "Validation is visible, loading ends, and a valid file can be chosen afterward.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OCL-04",
+      "name": "Offline ZIP creates concepts and set mapping",
+      "action": "Upload valid.zip containing two concepts and a CONCEPT-SET mapping; wait for completion and read concepts back.",
+      "expected": "The real importer persists both UUIDs, names and set membership. History reports three processed items.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OCL-05",
+      "name": "Repeat upload is idempotent",
+      "action": "Upload the same valid.zip again and read both concepts and set members.",
+      "expected": "No duplicate concept or set member is created. Existing identities survive.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OCL-06",
+      "name": "O3 previous imports and expanded results survive reload",
+      "action": "Open Previous Imports, expand the new import, then hard reload.",
+      "expected": "History and persisted result counts remain available after reload.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OCL-07",
+      "name": "OWA upload and history work without subscription",
+      "action": "Open /openmrs/owa/openconceptlab/index.html#/ without a saved subscription.",
+      "expected": "Local ZIP upload and previous history are visible; remote subscription import remains disabled.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OCL-08",
+      "name": "OWA updated concept persists after reload",
+      "action": "In the OWA, upload update.zip with the same concept UUID and an updated exported name.",
+      "expected": "The concept name changes, readback confirms it, and the updated value survives a reload.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OCL-09",
+      "name": "Item error detail stays local",
+      "action": "Upload errors.zip with an unsupported datatype; open its import detail.",
+      "expected": "A stored item error explains the unsupported datatype. Concept identity and error text are visible without an external link.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OCL-10",
+      "name": "Ignore item errors persists without remote import",
+      "action": "Acknowledge the failed import\u2019s errors, then reload the detail.",
+      "expected": "The error item is IGNORED_ERROR and acknowledgement persists. No remote import starts.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OCL-11",
+      "name": "Empty export is a completed zero-item import",
+      "action": "Upload empty.zip containing empty concept and mapping arrays.",
+      "expected": "A completed zero-item import is shown; an empty export is not fabricated into sample data.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OCL-12",
+      "name": "Browser makes no external service requests",
+      "action": "Keep the browser network interceptor active during every OCL flow.",
+      "expected": "Zero external HTTP(S) attempts and zero browser page errors. Separate backend sentinels cover direct and scheduled remote entry points.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OWA-01",
+      "name": "Manage Apps lists installed local apps and offline policy",
+      "action": "Open Administration \u2192 Open Web Apps Module \u2192 Manage Apps.",
+      "expected": "The two shipped apps are listed and the external-store policy is visible.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OWA-02",
+      "name": "Empty upload and Clear are usable",
+      "action": "Press Upload without a selected file; select valid.zip, then press Clear.",
+      "expected": "No app is installed by the empty submission. Clear resets the file selection and upload remains usable.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OWA-03",
+      "name": "Valid ZIP installation is listed after reload",
+      "action": "Upload valid.zip for QA Offline Packaged App; reload Manage Apps.",
+      "expected": "A real persisted version 1.0 package appears alongside the unchanged shipped apps.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OWA-04",
+      "name": "Launch uses real HTML CSS JS and local REST",
+      "action": "Launch the installed package from its app row.",
+      "expected": "Its packaged HTML, CSS and JavaScript load. A relative manifest read leads to the local OpenMRS REST session endpoint.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OWA-05",
+      "name": "Nested navigation and reload preserve assets",
+      "action": "Follow Nested page inside the package and hard reload.",
+      "expected": "The nested HTML page still loads from the installed package.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OWA-06",
+      "name": "Replacement publishes v2 and removes old files",
+      "action": "Upload update.zip for version 2.0 of the same app, then launch it.",
+      "expected": "Version 2.0 appears once. Its changed page loads and the obsolete v1 file returns 404.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OWA-07",
+      "name": "Malformed archives preserve installed v2",
+      "action": "Submit invalid, empty, missing-manifest, missing-launch, malformed-manifest, traversal and symlink ZIPs.",
+      "expected": "Every invalid install is rejected without 500. The valid v2 package and its files remain intact.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OWA-08",
+      "name": "Settings persist a custom local base URL",
+      "action": "Save App Base URL as /offlineapps; reload settings and launch using both prefixes.",
+      "expected": "The stored setting survives reload. Both /openmrs/offlineapps/ and canonical /openmrs/owa/ serve the app.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OWA-09",
+      "name": "Cancel deletion leaves the app usable",
+      "action": "Start deleting the owned app, then cancel.",
+      "expected": "The app remains installed and usable.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OWA-10",
+      "name": "Confirmed deletion removes both canonical and custom URLs",
+      "action": "Delete the owned app and confirm; request its old launch URL under both prefixes.",
+      "expected": "The app leaves the catalogue, its files are removed, and both URLs return 404.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OWA-11",
+      "name": "Remote installation is rejected without fetching or installing",
+      "action": "POST a package URL to ws/rest/owa/installapp.",
+      "expected": "HTTP 400 explains that external downloads are disabled. No package is downloaded or installed.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OWA-12",
+      "name": "Restore settings and leave shipped apps unchanged",
+      "action": "Restore the captured settings, reload, and compare the shipped app catalogue.",
+      "expected": "Original effective settings and both shipped apps remain. The original blank base is restored after the UI\u2019s stock /owa normalization.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "OWA-13",
+      "name": "No external requests or page errors",
+      "action": "Inspect intercepted network requests and browser errors after the complete OWA lifecycle.",
+      "expected": "Zero external HTTP(S) attempts and zero page errors.",
+      "reference": "passed",
+      "clone": "passed"
+    }
+  ],
+  "focusedChecks": {
+    "cloneOclOwaPythonTests": 28,
+    "cloneOwaMiddlewareTests": 16,
+    "referenceOcl": "REST, HTTP client and scheduler sentinels; local settings persistence",
+    "referenceOwa": "install, replacement, seven invalid ZIPs, staging cleanup, deletion and remote request sentinel"
+  },
+  "cleanup": {
+    "seedImportsPreserved": 24,
+    "seedImportItemsPreserved": 35440,
+    "downloadedSeedModified": false,
+    "createdContainers": 0
+  }
+}

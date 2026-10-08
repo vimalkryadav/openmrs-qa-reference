@@ -3,7 +3,7 @@
     "@openmrs/esm-patient-label-printing-app": "./openmrs-esm-patient-label-printing-app-12.3.4/openmrs-esm-patient-label-printing-app.js",
     "@openmrs/esm-active-visits-app": "./openmrs-esm-active-visits-app-11.1.0/openmrs-esm-active-visits-app.js",
     "@openmrs/esm-system-admin-app": "./openmrs-esm-system-admin-app-4.4.0/openmrs-esm-system-admin-app.js",
-    "@openmrs/esm-openconceptlab-app": "./patched/openmrs-esm-openconceptlab-app-4.4.0-ayu.c29136ab/openmrs-esm-openconceptlab-app.js",
+    "@openmrs/esm-openconceptlab-app": "./patched/openmrs-esm-openconceptlab-app-4.4.0-offline/openmrs-esm-openconceptlab-app.js",
     "@openmrs/esm-home-app": "./openmrs-esm-home-app-11.1.0/openmrs-esm-home-app.js",
     "@openmrs/esm-patient-task-list-app": "./openmrs-esm-patient-task-list-app-12.3.4/openmrs-esm-patient-task-list-app.js",
     "@openmrs/esm-patient-flags-app": "./openmrs-esm-patient-flags-app-12.3.4/openmrs-esm-patient-flags-app.js",

@@ -1,0 +1,37 @@
+name: Source validation
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validate source, pins and manual release boundary
+        run: python3 scripts/validate.py
+      - name: Check regression harness syntax
+        run: |
+          for script in tests/*.sh; do bash -n "$script"; done
+          for script in tests/*.mjs; do node --check "$script"; done
+      - name: Check changed-line whitespace
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ -n "$PR_BASE" ]; then
+            change_range="$PR_BASE...$PR_HEAD"
+          else
+            change_range="HEAD^...HEAD"
+          fi
+          git diff --check "$change_range" -- . ':!*.patch'
+          python3 scripts/check-patch-whitespace.py "$change_range"

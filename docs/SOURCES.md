@@ -8,6 +8,20 @@ The Reporting queue patch in `patches/reporting-2.1.0-baseline-queue.patch` docu
 
 The backend baseline contains other pre-existing distribution customizations (including the clock agent and earlier module fixes). They are preserved by digest, rather than silently rebuilt from different stock sources. The repository does not claim to reconstruct every byte of that historical baseline from stock upstream. Replacing that baseline requires a separate provenance/rebuild project. Current owned overrides and their compilation/package recipe are fully editable here; no unexplained developer-local path is required.
 
+Reporting REST 2.0.0 overrides (`MappedConverter` and `ReportRequestResource`) start from pinned commit `16bf6260c30c3ec18c6e4a3b6eb02c1b9b87cca5`. Their namespace is compiled with the controllers and packaged into the separate patched reportingrest module.
+
+The OCL 3.1.0 importer/scheduler/REST overrides and OWA 1.15.0 manager/controller/servlet overrides start from their exact tagged commits in `versions.lock.json`. Their local-only policy and paired validation are documented in `docs/OFFLINE_APPS.md`. OWA inherited University of Oslo BSD-3-Clause notices and the FileServlet GPL-3.0-or-later notice are retained in those files.
+
 The original OCL OWA is extracted from `openconceptlab-3.1.0.omod` in the pinned input image. Patient Flags OWA removal is retained from the baseline. Seed data is an external pinned DB-image artifact, never Git source. The DB compatibility SQL and entrypoint are reviewable under `docker/db`.
 
 Licenses: OpenMRS module/core files use their retained OpenMRS Public License or MPL notices; O3 admin-tools uses MPL-2.0. License texts are in `licenses/`. The package remains a collection of those components and project-specific build scripts, not a relicensing of upstream work. See `THIRD_PARTY.md`.
+
+Calculation 2.0.0 overrides start from pinned upstream commit
+`8cf6cdd7cd4b9c490b67cccebf57b2e71c3c882a`. The controller, validator, utility and
+registration service retain their OpenMRS Public License notices. Reporting's
+Calculation adapter overrides retain MPL-2.0 notices from the pinned Reporting
+2.1.0 source. This legacy Calculation OMOD duplicates API classes at its root and
+inside its API JAR; assembly patches both copies so the owned code is the code
+actually loaded. Calculation remains independent of Reporting at class-load time;
+optional saved defaults are read from the provider without adding a reverse module
+dependency.

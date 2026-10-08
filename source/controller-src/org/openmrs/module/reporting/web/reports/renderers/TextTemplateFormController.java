@@ -14,7 +14,6 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -48,7 +47,6 @@ import org.openmrs.module.reporting.evaluation.parameter.Parameter;
 import org.openmrs.module.reporting.propertyeditor.MappedEditor;
 import org.openmrs.module.reporting.report.definition.ReportDefinition;
 import org.openmrs.module.reporting.report.definition.service.ReportDefinitionService;
-import org.openmrs.module.reporting.report.renderer.ReportTemplateRenderer;
 import org.openmrs.module.reporting.report.renderer.TextTemplateRenderer;
 import org.openmrs.module.reporting.report.renderer.template.TemplateEngineManager;
 import org.openmrs.module.reporting.report.ReportData;
@@ -218,39 +216,9 @@ public class TextTemplateFormController {
 			@ModelAttribute("userParams") UserParams userParams
 			) throws UnsupportedEncodingException {
 		
-		ReportService rs = Context.getService(ReportService.class);
-		ReportDefinitionService rds = Context.getService(ReportDefinitionService.class);
-		ReportDefinition reportDefinition = rds.getDefinitionByUuid(reportDefinitionUuid);
-		ReportDesignResource designResource = new ReportDesignResource();
-		ReportDesign design = null;
-		
-		if (StringUtils.isNotEmpty(uuid)) {
-			design = rs.getReportDesignByUuid(uuid);
-		}
-		
-		// if it is a new Report Design then create an incomplete Report Design Object which will be used by the Preview section
-		if (design == null) {
-			design = new ReportDesign();
-			design.setRendererType(rendererType);
-			design.setName(Context.getMessageSourceService().getMessage("reporting.TextTemplateRenderer.incompleteDesign"));
-			design.setDescription(new Date().toString());
-			model.addAttribute("tempDesignUuid", design.getUuid());
-		}
-		
-		design.setReportDefinition(Context.getService(ReportDefinitionService.class).getDefinitionByUuid(reportDefinitionUuid));
-		design.getProperties().clear();
-		design.getResources().clear();
-		
-		designResource.setReportDesign(design);
-		designResource.setName("template");
-		designResource.setContentType("text/html");
-        designResource.setExtension("html");
-		designResource.setContents(script.getBytes("UTF-8"));
-		
-		design.addResource(designResource);
-		design.addPropertyValue(TextTemplateRenderer.TEMPLATE_TYPE, scriptType);
-		
-		design = rs.saveReportDesign(design);
+        ReportDefinition reportDefinition = Context.getService(ReportDefinitionService.class)
+                .getDefinitionByUuid(reportDefinitionUuid);
+        ReportDesign design = createPreviewDesign(reportDefinition, uuid, rendererType, script, scriptType);
 		
 		model.addAttribute("iframe", iframe);
 		model.addAttribute("script", script);
@@ -355,26 +323,11 @@ public class TextTemplateFormController {
 			if (!bindingResult.hasErrors()) { 
 				String previewResult = "";
 				ReportDesign design = null;
-				ReportDesignResource designResource = new ReportDesignResource();
 				ReportData result = null;
 				EvaluationContext ec = new EvaluationContext();
-				ReportService rs = Context.getService(ReportService.class);
 				ByteArrayOutputStream out = new ByteArrayOutputStream();
-				if (StringUtils.isNotEmpty(uuid)) {
-					design = rs.getReportDesignByUuid(uuid);
-					design.setRendererType(rendererType);
-					design.setReportDefinition(reportDefinition);
-					design.getProperties().clear();
-					design.getResources().clear();
-					
-					designResource.setReportDesign(design);
-					designResource.setName("template");
-					designResource.setContentType("text/html");
-        designResource.setExtension("html");
-					designResource.setContents(script.getBytes("UTF-8"));
-					
-					design.addResource(designResource);
-					design.addPropertyValue(TextTemplateRenderer.TEMPLATE_TYPE, scriptType);
+                {
+                    design = createPreviewDesign(reportDefinition, uuid, rendererType, script, scriptType);
 					
 					if ( userParams.getBaseCohort() != null ) {
 						try {
@@ -392,17 +345,18 @@ public class TextTemplateFormController {
 					}
 					
 					Class<?> rt = Context.loadClass(design.getRendererType().getName());
-					ReportTemplateRenderer reportRenderer = (ReportTemplateRenderer) rt.newInstance(); 
+					TextTemplateRenderer reportRenderer = (TextTemplateRenderer) rt.newInstance();
 					Throwable errorDetails = null;				
 					result = rds.evaluate(reportDefinition, ec);
 					try {
-						reportRenderer.render( result, design.getUuid(), out);
+						reportRenderer.renderWithDesign(result, design, out);
 					} catch (Throwable e) {
 						errorDetails = e;
 					}
 					previewResult = (out.toByteArray() != null ? new String(out.toByteArray(), "UTF-8") : "");
 					StringUtils.deleteWhitespace(previewResult);
 					model.addAttribute("previewResult", previewResult);
+                    model.addAttribute("previewComplete", errorDetails == null);
 					model.addAttribute("design", design);
 					model.addAttribute("errorDetails", errorDetails);
 					
@@ -422,6 +376,28 @@ public class TextTemplateFormController {
 		model.addAttribute("errors", bindingResult);
 		
 	}
+
+    protected ReportDesign createPreviewDesign(ReportDefinition definition, String uuid,
+            Class<? extends TextTemplateRenderer> rendererType, String script, String scriptType)
+            throws UnsupportedEncodingException {
+        // Never obtain a managed ReportDesign here: Hibernate can flush mutations without save().
+        ReportDesign design = new ReportDesign();
+        if (StringUtils.isNotEmpty(uuid)) {
+            design.setUuid(uuid);
+        }
+        design.setName("Text template preview");
+        design.setReportDefinition(definition);
+        design.setRendererType(rendererType);
+        ReportDesignResource resource = new ReportDesignResource();
+        resource.setReportDesign(design);
+        resource.setName("template");
+        resource.setContentType("text/html");
+        resource.setExtension("html");
+        resource.setContents(script.getBytes("UTF-8"));
+        design.addResource(resource);
+        design.addPropertyValue(TextTemplateRenderer.TEMPLATE_TYPE, scriptType);
+        return design;
+    }
 	
 	public class UserParams {
 		

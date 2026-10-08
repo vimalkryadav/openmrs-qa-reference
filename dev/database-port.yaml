@@ -1,0 +1,5 @@
+# Native application access to the retained QA MariaDB dependency.
+services:
+  db:
+    ports:
+      - "127.0.0.1:3307:3306"

@@ -1,0 +1,293 @@
+{
+  "verifiedOn": "2026-10-08",
+  "headless": true,
+  "origins": {
+    "reference": "http://localhost:8090",
+    "clone": "http://localhost:8093"
+  },
+  "flows": [
+    {
+      "id": "CALC-01",
+      "name": "Seeded registrations and provider choices are available",
+      "action": "Open Calculation Registrations and the new-registration form.",
+      "expected": "The four seed tokens and installed local provider choices are available.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-02",
+      "name": "Required registration validation retains the editable form",
+      "action": "Save an empty registration.",
+      "expected": "Required-field errors retain the editable form.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-03",
+      "name": "Unavailable implementation cannot be registered",
+      "action": "Try registering a missing local Groovy calculation.",
+      "expected": "The provider is rejected with an honest unavailable message; no registration is saved.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-04",
+      "name": "Create registration persists after reload",
+      "action": "Create an owned PatientIdCalculation registration, then reload.",
+      "expected": "The saved token and provider persist.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-05",
+      "name": "Duplicate token is rejected",
+      "action": "Create another registration using the same token.",
+      "expected": "Duplicate validation preserves the original registration.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-06",
+      "name": "Edit registration persists",
+      "action": "Rename the owned token, save, then reload.",
+      "expected": "The edited token persists and the previous token is replaced.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-07",
+      "name": "Explicit patient selection is ordered and deduplicated",
+      "action": "Enter two active patient IDs out of order, with one repeated.",
+      "expected": "Actual patients are evaluated once each, in ascending order.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-08",
+      "name": "First-N selection is deterministic and bounded",
+      "action": "Request the first two active patients; then submit negative, oversized and nonnumeric counts.",
+      "expected": "Selection is deterministic; counts outside the whole-number range 0\u20131000 show errors.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-09",
+      "name": "Unknown and malformed patient inputs are visible errors",
+      "action": "Submit an unknown patient and malformed patient text.",
+      "expected": "No invented result is returned; the invalid text stays in the form.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-10",
+      "name": "Empty cohort has an explicit result state",
+      "action": "Evaluate a zero-patient cohort.",
+      "expected": "An explicit no-results state appears.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-11",
+      "name": "Date parameter changes real age without retaining old defaults",
+      "action": "Evaluate age at the frozen date, then six years earlier; reload and open a fresh form.",
+      "expected": "Real age changes by six years; the saved definition retains its original behavior.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-12",
+      "name": "Typed number parameter evaluates submitted values",
+      "action": "Register the owned Integer parameter definition; evaluate 42 and then 7.",
+      "expected": "Each submitted numeric value appears in the result.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-13",
+      "name": "Typed boolean parameter evaluates submitted values",
+      "action": "Evaluate the owned Boolean parameter with True and False.",
+      "expected": "Both choices produce the corresponding real result.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-14",
+      "name": "Typed text parameter evaluates submitted values",
+      "action": "Evaluate plain text containing angle brackets, then change it.",
+      "expected": "Actual text is escaped and updates; it is never interpreted as markup.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-15",
+      "name": "Metadata collection returns real identifiers rather than object hashes",
+      "action": "Select the local identifier type for an owned identifier calculation.",
+      "expected": "The result contains real patient identifiers in a collection, without an object hash.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-16",
+      "name": "Delete cancellation and confirmation work",
+      "action": "Cancel deletion, then confirm it and revisit the deleted registration.",
+      "expected": "Cancel preserves it; confirmation deletes it; the resource read returns 404.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-17",
+      "name": "Remove remaining owned registrations and preserve seed registrations",
+      "action": "Delete every remaining owned registration and revisit the list.",
+      "expected": "All four seed registrations remain; no owned registration remains.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-18",
+      "name": "No external requests or page errors",
+      "action": "Intercept nonlocal HTTP(S) throughout the headless run.",
+      "expected": "Zero external requests and zero browser page errors.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-19",
+      "name": "Invalid typed values retain inputs and explicit patients take precedence",
+      "action": "Submit bad and missing numeric values, impossible/trailing-junk dates, and valid explicit patients with an invalid first-N count.",
+      "expected": "Errors retain their inputs; explicit patients take precedence and evaluate.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-20",
+      "name": "Numeric collections preserve typed members",
+      "action": "Add two Integer collection entries, 1 and 2, and evaluate.",
+      "expected": "The real typed collection renders [1, 2].",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-21",
+      "name": "Static metadata collections display local names",
+      "action": "Select a database location in a static metadata collection and evaluate.",
+      "expected": "The actual local location name appears instead of a UUID or identity hash.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-A01",
+      "name": "Automatic Registration preview and Cancel do not write",
+      "action": "Open Automatic Registration, inspect defaults, then Cancel.",
+      "expected": "The three live suggestions appear; Cancel preserves every registration field.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-A02",
+      "name": "Use existing skips all three seeded suggestions without changes",
+      "action": "Select Reporting Data Items with Use existing and submit.",
+      "expected": "All three suggested seed registrations are skipped; every row is unchanged.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-A03",
+      "name": "Apply creates a missing suggested registration and preserves other rows",
+      "action": "With an exact four-row recovery snapshot, remove age through the UI and apply suggestions.",
+      "expected": "One missing age registration is created with a new identity and correct provider target; the other rows remain unchanged after reload.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-A04",
+      "name": "Overwrite replaces a changed provider target while preserving registration identity",
+      "action": "Temporarily change gender to a different valid provider target, then apply Overwrite.",
+      "expected": "The suggested gender target replaces the changed target while preserving its original UUID; three replacements are reported.",
+      "reference": "passed",
+      "clone": "passed"
+    },
+    {
+      "id": "CALC-A05",
+      "name": "All four original rows and definition hashes restored; no external/page errors",
+      "action": "Delete the newly created age row through the UI, restore the exact snapshot, and reload.",
+      "expected": "All original registration columns/identities and all saved-definition hashes match; no external browser attempts or page errors occur.",
+      "reference": "passed",
+      "clone": "passed"
+    }
+  ],
+  "externalRequests": {
+    "reference": [],
+    "clone": []
+  },
+  "pageErrors": {
+    "reference": [],
+    "clone": []
+  },
+  "cleanup": {
+    "ownedDefinitions": {
+      "clone": {},
+      "reference": {}
+    },
+    "ownedRegistrations": {
+      "clone": 0,
+      "reference": 0
+    },
+    "seedRegistrationsPreserved": 4
+  },
+  "savedDefinitionHashesUnchanged": true,
+  "focusedNativeAssertions": 19,
+  "nativeBooleanSupplement": {
+    "target": "reference",
+    "headless": true,
+    "results": [
+      {
+        "id": "CALC-B01",
+        "name": "Boolean choice remains selected after evaluation and reload",
+        "status": "passed"
+      }
+    ],
+    "externalRequests": [],
+    "pageErrors": [],
+    "owned": [
+      {
+        "token": "QA Local Calculation 20261008-boolean",
+        "id": "24"
+      }
+    ],
+    "templateSha256": "c504e24221cd7248d4ffee019513aae9f1330018e5aad8ae4c23260828b4dd03"
+  },
+  "automaticRegistrationProof": {
+    "execution": "Actual live browser UI on both applications, not an isolated service double",
+    "commands": [
+      "node tests/headless-calculation-auto.mjs reference",
+      "node tests/headless-calculation-auto.mjs clone"
+    ],
+    "restoration": {
+      "reference": {
+        "allFourRegistrationRowsExact": true,
+        "allDefinitionHashesUnchanged": true,
+        "definitionCount": 6,
+        "clinicalTablesWritten": false
+      },
+      "clone": {
+        "allFourRegistrationRowsExact": true,
+        "allDefinitionHashesUnchanged": true,
+        "definitionCount": 6,
+        "clinicalTablesWritten": false
+      }
+    },
+    "externalBrowserRequests": {
+      "reference": [],
+      "clone": []
+    },
+    "pageErrors": {
+      "reference": [],
+      "clone": []
+    },
+    "limits": [
+      "The four seed registration rows are temporarily changed only during the isolated mutation window, then every stored column is restored from the per-row snapshot.",
+      "Database auto-increment counters are not rewound; all original integer keys and UUIDs are restored.",
+      "No clinical or saved-definition mutation is performed."
+    ]
+  }
+}

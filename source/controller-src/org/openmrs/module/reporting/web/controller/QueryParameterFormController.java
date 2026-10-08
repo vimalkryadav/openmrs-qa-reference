@@ -10,6 +10,7 @@
 package org.openmrs.module.reporting.web.controller;
 
 import org.apache.commons.lang.StringUtils;
+import org.openmrs.module.reporting.web.util.StructuredReportParameters;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.openmrs.Cohort;
@@ -17,6 +18,9 @@ import org.openmrs.api.context.Context;
 import org.openmrs.module.htmlwidgets.web.WidgetUtil;
 import org.openmrs.module.reporting.data.DataDefinition;
 import org.openmrs.module.reporting.dataset.definition.LogicDataSetDefinition;
+import org.openmrs.module.reporting.dataset.IterableSqlDataSet;
+import org.openmrs.module.reporting.dataset.DataSet;
+import org.openmrs.module.reporting.report.ReportData;
 import org.openmrs.module.reporting.dataset.definition.PatientDataSetDefinition;
 import org.openmrs.module.reporting.evaluation.EvaluationContext;
 import org.openmrs.module.reporting.evaluation.MissingDependencyException;
@@ -56,6 +60,8 @@ public class QueryParameterFormController {
 	 */
     @InitBinder
     public void initBinder(WebDataBinder binder) { 
+        // Runtime values belong to EvaluationContext, never to the managed definition.
+        binder.setDisallowedFields("columnDefinitions", "columnDefinitions*", "sortCriteria", "sortCriteria*");
     	binder.registerCustomEditor(Date.class, new CustomDateEditor(Context.getDateFormat(), true)); 
     }
 	
@@ -78,6 +84,16 @@ public class QueryParameterFormController {
 			parameterizable = ParameterizableUtil.getParameterizable(uuid, type);
 		}
 		
+        Map<String,Object> rawStructuredValues=new HashMap<String,Object>();
+        for (Parameter parameter : parameterizable.getParameters()) rawStructuredValues.put(parameter.getName(),request.getParameter(parameter.getName()));
+        try {
+            for (Map.Entry<String,Object> entry : StructuredReportParameters.model(parameterizable,rawStructuredValues).entrySet()) request.setAttribute(entry.getKey(),entry.getValue());
+        } catch (IllegalArgumentException invalid) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            request.setAttribute("structuredParameterError",invalid.getMessage());
+            return new ModelAndView("/module/reporting/parameters/queryParameterForm");
+        }
+
 		if (parameterizable != null && parameterizable.getParameters().isEmpty() && StringUtils.isEmpty(action)) {
 			action = "preview";
 		}
@@ -95,7 +111,8 @@ public class QueryParameterFormController {
 				EvaluationContext evaluationContext = new EvaluationContext();
 
 				if (parameterizable instanceof DataDefinition || parameterizable instanceof LogicDataSetDefinition
-                    || parameterizable instanceof PatientDataSetDefinition) {
+                    || parameterizable instanceof PatientDataSetDefinition
+                    || parameterizable instanceof org.openmrs.module.reporting.dataset.definition.RowPerObjectDataSetDefinition) {
 				    Integer randomBaseCohortSize = 50;
 				    // Preview must not materialize every patient in a large database.
                     Cohort baseCohort = new Cohort();
@@ -112,7 +129,9 @@ public class QueryParameterFormController {
 				if (parameterizable != null && parameterizable.getParameters() != null) { 
 					for (Parameter p : parameterizable.getParameters()) {
                         try {
-                            Object paramVal = WidgetUtil.getFromRequest(request, p.getName(), p.getType(), p.getCollectionType());
+                            Object paramVal = StructuredReportParameters.targets(parameterizable).containsKey(p.getName())
+                                ? StructuredReportParameters.parse(parameterizable,p.getName(),request.getParameter(p.getName()))
+                                : WidgetUtil.getFromRequest(request, p.getName(), p.getType(), p.getCollectionType());
                             parameterValues.put(p.getName(), paramVal);
                         } catch (IllegalArgumentException invalidValue) {
                             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -124,6 +143,14 @@ public class QueryParameterFormController {
 					}
 				}
 	
+                try { StructuredReportParameters.validate(parameterizable,parameterValues); }
+                catch (IllegalArgumentException invalidValue) {
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    request.getSession().removeAttribute("results");
+                    request.getSession().setAttribute(WebConstants.OPENMRS_ERROR_ATTR,WebUtil.escapeHTML(invalidValue.getMessage()));
+                    return new ModelAndView("/module/reporting/parameters/queryParameterForm");
+                }
+
 				// Set parameter values
 				evaluationContext.setParameterValues(parameterValues);		
 	
@@ -132,6 +159,17 @@ public class QueryParameterFormController {
 					long startTime = System.nanoTime();
 					// Evaluate the parameterizable and populate the model
 					results = ParameterizableUtil.evaluateParameterizable(parameterizable, evaluationContext);						
+                    if (results instanceof IterableSqlDataSet) {
+                        results = ((IterableSqlDataSet) results).getPreview(50);
+                        model.addObject("previewRowLimit", 50);
+                    } else if (results instanceof ReportData) {
+                        for (Map.Entry<String, DataSet> dataSet : ((ReportData) results).getDataSets().entrySet()) {
+                            if (dataSet.getValue() instanceof IterableSqlDataSet) {
+                                dataSet.setValue(((IterableSqlDataSet) dataSet.getValue()).getPreview(50));
+                                model.addObject("previewRowLimit", 50);
+                            }
+                        }
+                    }
 					//model.addObject("results", results);
 					request.getSession().setAttribute("results", results);
 					long executionTime = (System.nanoTime() - startTime) / 1000000L;

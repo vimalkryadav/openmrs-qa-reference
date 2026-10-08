@@ -1,5 +1,5 @@
 diff --git a/packages/esm-admin-openconceptlab-app/src/import/import.component.tsx b/packages/esm-admin-openconceptlab-app/src/import/import.component.tsx
-index 1c8cf80..056e8c6 100644
+index 1c8cf80..d8da092 100644
 --- a/packages/esm-admin-openconceptlab-app/src/import/import.component.tsx
 +++ b/packages/esm-admin-openconceptlab-app/src/import/import.component.tsx
 @@ -1,4 +1,5 @@
@@ -12,7 +12,7 @@ index 1c8cf80..056e8c6 100644
  import { useTranslation } from 'react-i18next';
  import { showNotification } from '@openmrs/esm-framework';
  import { startImportWithFile, startImportWithSubscription, useSubscription } from './import.resource';
-+import { getErrorMessage, PREVIOUS_IMPORTS_URL } from '../utils';
++import { getErrorMessage, PREVIOUS_IMPORTS_URL, OFFLINE_MESSAGE } from '../utils';
  import styles from './import.scss';
  
  const allowedMimeTypes = ['application/zip', 'application/x-zip-compressed'];
@@ -23,6 +23,15 @@ index 1c8cf80..056e8c6 100644
    const [isSubscriptionAvailable, setIsSubscriptionAvailable] = useState(false);
    const [file, setFile] = useState<File>();
    const [isFileUploading, setIsFileUploading] = useState(false);
+@@ -29,7 +32,7 @@ const Import: React.FC = () => {
+ 
+   useEffect(() => {
+     if (!isLoading && !error) {
+-      setIsSubscriptionAvailable(!!subscription);
++      setIsSubscriptionAvailable(false);
+     }
+   }, [isLoading, error, subscription]);
+ 
 @@ -66,21 +69,22 @@ const Import: React.FC = () => {
        }
  
@@ -86,6 +95,71 @@ index 1c8cf80..056e8c6 100644
    );
  
    if (isLoading) {
+@@ -151,6 +156,7 @@ const Import: React.FC = () => {
+     <Grid className={styles.grid}>
+       <Column sm={4} md={8} lg={10}>
+         <Form onSubmit={handleImportWithSubscription}>
++          <p>{OFFLINE_MESSAGE}</p>
+           <h3 className={styles.productiveHeading03}>{t('importConcepts', 'Import Concepts')}</h3>
+           <p className={styles.formText}>
+             {t(
+diff --git a/packages/esm-admin-openconceptlab-app/src/previous-imports/import-overview/import-items.component.tsx b/packages/esm-admin-openconceptlab-app/src/previous-imports/import-overview/import-items.component.tsx
+index 48d71e6..dd3d205 100644
+--- a/packages/esm-admin-openconceptlab-app/src/previous-imports/import-overview/import-items.component.tsx
++++ b/packages/esm-admin-openconceptlab-app/src/previous-imports/import-overview/import-items.component.tsx
+@@ -2,7 +2,6 @@ import React, { Fragment, useCallback, useEffect, useState } from 'react';
+ import { useTranslation } from 'react-i18next';
+ import {
+   DataTableSkeleton,
+-  Link,
+   Pagination,
+   PaginationSkeleton,
+   Table,
+@@ -94,9 +93,9 @@ const ImportItems: React.FC<ImportItemsProps> = ({ importUuid }) => {
+               <Fragment key={row.uuid}>
+                 <TableRow className={styles.tableDataRow}>
+                   <TableCell>
+-                    <Link href={row.versionUrl}>
++                    <span title="External OCL links are unavailable in this offline environment.">
+                       {row.type} {row.uuid}
+-                    </Link>
++                    </span>
+                   </TableCell>
+                   <TableCell>{row.errorMessage}</TableCell>
+                 </TableRow>
+diff --git a/packages/esm-admin-openconceptlab-app/src/previous-imports/import-overview/import-overview.component.tsx b/packages/esm-admin-openconceptlab-app/src/previous-imports/import-overview/import-overview.component.tsx
+index 984864c..80132b8 100644
+--- a/packages/esm-admin-openconceptlab-app/src/previous-imports/import-overview/import-overview.component.tsx
++++ b/packages/esm-admin-openconceptlab-app/src/previous-imports/import-overview/import-overview.component.tsx
+@@ -20,7 +20,7 @@ const ImportOverview: React.FC<ImportOverviewProps> = ({ selectedImportObject })
+       <br />
+ 
+       <span className={styles.heading01}>{t('completedOn', 'Completed on')} </span>
+-      <span className="body">{formatDatetime(new Date(selectedImportObject.localDateStopped))}</span>
++      <span className="body">{selectedImportObject.localDateStopped ? formatDatetime(new Date(selectedImportObject.localDateStopped)) : 'Pending'}</span>
+       <br />
+ 
+       <span className={styles.heading01}>{t('duration', 'Duration')} </span>
+diff --git a/packages/esm-admin-openconceptlab-app/src/root.component.tsx b/packages/esm-admin-openconceptlab-app/src/root.component.tsx
+index aa88995..9d7f081 100644
+--- a/packages/esm-admin-openconceptlab-app/src/root.component.tsx
++++ b/packages/esm-admin-openconceptlab-app/src/root.component.tsx
+@@ -6,6 +6,7 @@ import Import from './import/import.component';
+ import PreviousImports from './previous-imports/previous-imports.component';
+ import Subscription from './subscription/subscription.component';
+ import styles from './root.scss';
++import { OFFLINE_MESSAGE } from './utils';
+ 
+ const Root: React.FC = () => {
+   const { t } = useTranslation();
+@@ -20,6 +21,7 @@ const Root: React.FC = () => {
+         </TabList>
+         <TabPanels>
+           <TabPanel className={styles.tabPanel}>
++            <p>{OFFLINE_MESSAGE} Subscription settings are stored locally; automatic updates do not run.</p>
+             <Subscription />
+           </TabPanel>
+           <TabPanel className={styles.tabPanel}>
 diff --git a/packages/esm-admin-openconceptlab-app/src/subscription/subscription.component.tsx b/packages/esm-admin-openconceptlab-app/src/subscription/subscription.component.tsx
 index 7a10f8e..b40ce2c 100644
 --- a/packages/esm-admin-openconceptlab-app/src/subscription/subscription.component.tsx
@@ -168,7 +242,7 @@ index 7a10f8e..b40ce2c 100644
  
        return () => abortController.abort();
 diff --git a/packages/esm-admin-openconceptlab-app/src/utils.ts b/packages/esm-admin-openconceptlab-app/src/utils.ts
-index b118e72..df568b6 100644
+index b118e72..f141c00 100644
 --- a/packages/esm-admin-openconceptlab-app/src/utils.ts
 +++ b/packages/esm-admin-openconceptlab-app/src/utils.ts
 @@ -1,5 +1,13 @@
@@ -185,11 +259,53 @@ index b118e72..df568b6 100644
  /*
   * This checks if collection version has been passed to subscription url by checking number of forward slashes after base url
   * If the number is 5, such as with https://api.openconceptlab.org/users/username/collections/collectionname/v1.0
+@@ -25,3 +33,5 @@ export const isVersionDefinedInUrl = (subscriptionUrl: string) => {
+     return false;
+   }
+ };
++
++export const OFFLINE_MESSAGE = 'Remote OCL imports are disabled in this environment. Import a local ZIP file containing export.json instead.';
 diff --git a/packages/esm-reports-app/src/components/edit-scheduled-report/edit-scheduled-report-form.component.tsx b/packages/esm-reports-app/src/components/edit-scheduled-report/edit-scheduled-report-form.component.tsx
-index ec07dda..d2dd5a5 100644
+index ec07dda..120c166 100644
 --- a/packages/esm-reports-app/src/components/edit-scheduled-report/edit-scheduled-report-form.component.tsx
 +++ b/packages/esm-reports-app/src/components/edit-scheduled-report/edit-scheduled-report-form.component.tsx
-@@ -77,13 +77,13 @@ const EditScheduledReportForm: React.FC<EditScheduledReportForm> = ({
+@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
+ import { Button, ButtonSet, Form, Select, SelectItem, Stack } from '@carbon/react';
+ import { getCoreTranslation, showSnackbar, useLayoutType } from '@openmrs/esm-framework';
+ import { useReportDefinition, useReportDesigns, useReportRequest, runReportObservable } from '../reports.resource';
++import { parametersValid, parameterPayload } from '../structured-parameter';
+ import ReportParameterInput from '../report-parameter-input.component';
+ import SimpleCronEditor from '../simple-cron-editor/simple-cron-editor.component';
+ import styles from './edit-scheduled-report-form.scss';
+@@ -33,7 +34,9 @@ const EditScheduledReportForm: React.FC<EditScheduledReportForm> = ({
+   const [schedule, setSchedule] = useState('');
+ 
+   const [isSubmitting, setIsSubmitting] = useState(false);
+-  const [isSubmittable, setIsSubmittable] = useState(false);
++  const isSubmittable = !!reportDefinition &&
++    (!reportRequestUuid || reportRequest?.uuid === reportRequestUuid) &&
++    !!schedule && !!renderModeUuid && parametersValid(reportDefinition.parameters ?? [], reportParameters);
+   const [ignoreChanges, setIgnoreChanges] = useState(true);
+ 
+   useEffect(() => {
+@@ -48,6 +51,7 @@ const EditScheduledReportForm: React.FC<EditScheduledReportForm> = ({
+   const handleSubmit = useCallback(
+     (event) => {
+       event.preventDefault();
++      if (!isSubmittable || isSubmitting) return;
+ 
+       setIsSubmitting(true);
+ 
+@@ -57,7 +61,7 @@ const EditScheduledReportForm: React.FC<EditScheduledReportForm> = ({
+           parameterizable: {
+             uuid: reportDefinitionUuid,
+           },
+-          parameterMappings: reportParameters,
++          parameterMappings: parameterPayload(reportDefinition?.parameters ?? [], reportParameters),
+         },
+         renderingMode: {
+           argument: renderModeUuid,
+@@ -77,18 +81,18 @@ const EditScheduledReportForm: React.FC<EditScheduledReportForm> = ({
              closePanel();
              setIsSubmitting(false);
            },
@@ -206,19 +322,24 @@ index ec07dda..d2dd5a5 100644
              setIsSubmitting(false);
            },
          );
-@@ -100,8 +100,9 @@ const EditScheduledReportForm: React.FC<EditScheduledReportForm> = ({
+     },
+-    [reportRequestUuid, reportDefinitionUuid, reportParameters, renderModeUuid, schedule, t, closePanel],
++    [reportRequestUuid, reportDefinitionUuid, reportParameters, renderModeUuid, schedule, t, closePanel, reportDefinition, isSubmittable, isSubmitting],
+   );
+ 
+   const handleOnChange = () => {
+@@ -99,10 +103,6 @@ const EditScheduledReportForm: React.FC<EditScheduledReportForm> = ({
+     setSchedule(isValid ? cron : '');
    };
  
-   useEffect(() => {
+-  useEffect(() => {
 -    setIsSubmittable(!!schedule && !!renderModeUuid);
 -  }, [schedule, renderModeUuid]);
-+    setIsSubmittable(!!schedule && !!renderModeUuid &&
-+      (reportDefinition?.parameters ?? []).every((parameter) => !parameter.required || !!reportParameters[parameter.name]));
-+  }, [schedule, renderModeUuid, reportDefinition?.parameters, reportParameters]);
- 
+-
    return (
      <Form className={styles.desktopEditSchedule} onChange={handleOnChange} onSubmit={handleSubmit}>
-@@ -117,7 +118,7 @@ const EditScheduledReportForm: React.FC<EditScheduledReportForm> = ({
+       <Stack gap={8} className={styles.container}>
+@@ -117,7 +117,7 @@ const EditScheduledReportForm: React.FC<EditScheduledReportForm> = ({
                  [parameter.name]: parameterValue,
                }));
              }}
@@ -299,10 +420,10 @@ index 973a744..6696d9b 100644
          .join(',');
      });
 diff --git a/packages/esm-reports-app/src/components/report-parameter-input.component.tsx b/packages/esm-reports-app/src/components/report-parameter-input.component.tsx
-index a7e8d4e..a27409a 100644
+index a7e8d4e..7a5fa34 100644
 --- a/packages/esm-reports-app/src/components/report-parameter-input.component.tsx
 +++ b/packages/esm-reports-app/src/components/report-parameter-input.component.tsx
-@@ -1,7 +1,7 @@
+@@ -1,10 +1,11 @@
  import React, { useCallback, useEffect, useRef, useState } from 'react';
  import { isEqual } from 'lodash-es';
  import { DatePicker, DatePickerInput, Select, SelectItem, TextInput, Search } from '@carbon/react';
@@ -311,7 +432,11 @@ index a7e8d4e..a27409a 100644
  import styles from './run-report/run-report-form.scss';
  import { useTranslation } from 'react-i18next';
  import { useDebounce } from '@openmrs/esm-framework';
-@@ -15,9 +15,11 @@ interface ReportParameterInputProps {
++import { isStructured, StructuredParameterInput } from './structured-parameter';
+ import ConceptSearchResults from './concept-search/concept-search-results';
+ 
+ interface ReportParameterInputProps {
+@@ -15,9 +16,11 @@ interface ReportParameterInputProps {
  
  function getInitialValue(parameter: any, value: any) {
    if (parameter.type === 'java.util.Date') {
@@ -324,7 +449,7 @@ index a7e8d4e..a27409a 100644
    } else {
      return value;
    }
-@@ -26,6 +28,7 @@ function getInitialValue(parameter: any, value: any) {
+@@ -26,6 +29,7 @@ function getInitialValue(parameter: any, value: any) {
  const ReportParameterInput: React.FC<ReportParameterInputProps> = ({ parameter, value, onChange }) => {
    const { t } = useTranslation();
    const { locations } = useLocations();
@@ -332,7 +457,7 @@ index a7e8d4e..a27409a 100644
    const [valueInternal, setValueInternal] = useState<string | number>(getInitialValue(parameter, value));
    const searchInputRef = useRef(null);
    const [searchTerm, setSearchTerm] = useState('');
-@@ -115,11 +118,12 @@ const ReportParameterInput: React.FC<ReportParameterInputProps> = ({ parameter,
+@@ -115,11 +119,12 @@ const ReportParameterInput: React.FC<ReportParameterInputProps> = ({ parameter,
              datePickerType="single"
              onChange={([dateValue]) => handleOnDateChange(dateValue)}
              className={styles.datePicker}
@@ -347,7 +472,7 @@ index a7e8d4e..a27409a 100644
        case 'java.lang.String':
        case 'java.lang.Integer':
          return (
-@@ -150,6 +154,24 @@ const ReportParameterInput: React.FC<ReportParameterInputProps> = ({ parameter,
+@@ -150,6 +155,24 @@ const ReportParameterInput: React.FC<ReportParameterInputProps> = ({ parameter,
              ))}
            </Select>
          );
@@ -372,7 +497,7 @@ index a7e8d4e..a27409a 100644
        case 'org.openmrs.Concept':
          return (
            <div>
-@@ -180,6 +202,11 @@ const ReportParameterInput: React.FC<ReportParameterInputProps> = ({ parameter,
+@@ -180,11 +203,18 @@ const ReportParameterInput: React.FC<ReportParameterInputProps> = ({ parameter,
    };
  
    function handleOnDateChange(dateValue) {
@@ -384,6 +509,13 @@ index a7e8d4e..a27409a 100644
      const newDate = new Date(dateValue);
      setValueInternal(newDate.toISOString());
      onChange(newDate.toISOString());
+   }
+ 
++  if (isStructured(parameter.type)) return <StructuredParameterInput parameter={parameter} value={value} onChange={onChange} />;
++
+   return <div className={styles.runReportInnerDivElement}>{renderParameterElementBasedOnType()}</div>;
+ };
+ 
 diff --git a/packages/esm-reports-app/src/components/report-parameter.component.tsx b/packages/esm-reports-app/src/components/report-parameter.component.tsx
 index dfdcb14..3b9db2d 100644
 --- a/packages/esm-reports-app/src/components/report-parameter.component.tsx
@@ -478,10 +610,18 @@ index 9ab9dd9..2e25d65 100644
      : '';
    return <span>{scheduleDescription}</span>;
 diff --git a/packages/esm-reports-app/src/components/reports-data-overview.component.tsx b/packages/esm-reports-app/src/components/reports-data-overview.component.tsx
-index 3c79b00..6e411ab 100644
+index 3c79b00..388cf10 100644
 --- a/packages/esm-reports-app/src/components/reports-data-overview.component.tsx
 +++ b/packages/esm-reports-app/src/components/reports-data-overview.component.tsx
-@@ -74,7 +74,7 @@ const ReportsDataOverviewComponent: React.FC = () => {
+@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
+ import { ExtensionSlot, showSnackbar, getCoreTranslation, useConfig } from '@openmrs/esm-framework';
+ import Overlay from './overlay.component';
+ import ReportDataViewer from './report-data-viewer.component';
++import { isStructured, parametersValid, StructuredParameterInput } from './structured-parameter';
+ import ReportParameter from './report-parameter.component';
+ import { useReportDefinitions, useReportData, useLocations } from './reports.resource';
+ import styles from './reports.scss';
+@@ -74,7 +75,7 @@ const ReportsDataOverviewComponent: React.FC = () => {
          showSnackbar({
            kind: 'error',
            title: getCoreTranslation('error'),
@@ -490,8 +630,27 @@ index 3c79b00..6e411ab 100644
              parameters: missingParameters.join(', '),
            }),
          });
+@@ -82,6 +83,8 @@ const ReportsDataOverviewComponent: React.FC = () => {
+       }
+     }
+ 
++    if (!parametersValid(selectedReportDefinition?.parameters ?? [], reportParameters)) return;
++
+     // Only fetch when explicitly requested and parameters are valid
+     mutate();
+   };
+@@ -128,7 +131,8 @@ const ReportsDataOverviewComponent: React.FC = () => {
+             </Select>
+           </div>
+           {selectedReportDefinition?.parameters?.map((parameter) => {
+-            return parameter.type === 'java.util.Date' ? (
++            if (isStructured(parameter.type)) return <StructuredParameterInput key={parameter.name} parameter={parameter} value={reportParameters[parameter.name]} onChange={(value) => setReportParameters((state) => ({...state,[parameter.name]:value}))} />;
++              return parameter.type === 'java.util.Date' ? (
+               <div key={parameter.name + selectedReportDefinition.uuid} className={styles.formField}>
+                 <ReportParameter
+                   parameter={parameter}
 diff --git a/packages/esm-reports-app/src/components/reports.resource.tsx b/packages/esm-reports-app/src/components/reports.resource.tsx
-index 100965c..ff4190c 100644
+index 100965c..29aee2b 100644
 --- a/packages/esm-reports-app/src/components/reports.resource.tsx
 +++ b/packages/esm-reports-app/src/components/reports.resource.tsx
 @@ -1,4 +1,4 @@
@@ -530,19 +689,63 @@ index 100965c..ff4190c 100644
    );
  
    const reports = data?.data?.results;
+@@ -212,6 +228,7 @@ function convertParametersToString(data: any): string {
+       } else if (parameter.type === 'org.openmrs.Location') {
+         value = value?.display;
+       }
++      if (value != null && typeof value === 'object') value = JSON.stringify(value);
+       finalString = finalString + parameter.label + ': ' + value + ', ';
+     });
+ 
 diff --git a/packages/esm-reports-app/src/components/run-report/run-report-form.component.tsx b/packages/esm-reports-app/src/components/run-report/run-report-form.component.tsx
-index fdb470a..cb45c56 100644
+index fdb470a..3a945d0 100644
 --- a/packages/esm-reports-app/src/components/run-report/run-report-form.component.tsx
 +++ b/packages/esm-reports-app/src/components/run-report/run-report-form.component.tsx
-@@ -28,6 +28,7 @@ const RunReportForm: React.FC<RunReportForm> = ({ closePanel }) => {
+@@ -4,6 +4,7 @@ import classNames from 'classnames';
+ import { take } from 'rxjs/operators';
+ import { useTranslation } from 'react-i18next';
+ import { showSnackbar, useLayoutType } from '@openmrs/esm-framework';
++import { isStructured, structuredTypes, parametersValid, parameterPayload, StructuredParameterInput } from '../structured-parameter';
+ import ReportParameter from '../report-parameter.component';
+ import { closeOverlay } from '../../hooks/useOverlay';
+ import { useLocations, useReportDefinitions, useReportDesigns, runReportObservable } from '../reports.resource';
+@@ -27,7 +28,9 @@ const RunReportForm: React.FC<RunReportForm> = ({ closePanel }) => {
+ 
    const supportedParameterTypes = useMemo(
      () => [
++      ...structuredTypes,
        'java.util.Date',
 +      'java.util.Locale',
        'java.lang.String',
        'java.lang.Integer',
        'org.openmrs.Location',
-@@ -111,7 +112,7 @@ const RunReportForm: React.FC<RunReportForm> = ({ closePanel }) => {
+@@ -57,7 +60,7 @@ const RunReportForm: React.FC<RunReportForm> = ({ closePanel }) => {
+         return isValid;
+       }) ?? true;
+ 
+-    if (!isAnyNotSupportedType && allRequiredParametersValid && reportUuid !== '' && renderModeUuid !== '') {
++    if (parametersValid(currentReport?.parameters ?? [], reportParameters) && !isAnyNotSupportedType && allRequiredParametersValid && reportUuid !== '' && renderModeUuid !== '') {
+       setIsFormValid(true);
+     } else {
+       setIsFormValid(false);
+@@ -86,6 +89,7 @@ const RunReportForm: React.FC<RunReportForm> = ({ closePanel }) => {
+   const handleSubmit = useCallback(
+     (event) => {
+       event.preventDefault();
++      if (!isFormValid || isSubmitting) return;
+ 
+       setIsSubmitting(true);
+ 
+@@ -95,7 +99,7 @@ const RunReportForm: React.FC<RunReportForm> = ({ closePanel }) => {
+           parameterizable: {
+             uuid: reportUuid,
+           },
+-          parameterMappings: reportParameters,
++          parameterMappings: parameterPayload(currentReport?.parameters ?? [], reportParameters),
+         },
+         renderingMode: {
+           argument: renderModeUuid,
+@@ -111,7 +115,7 @@ const RunReportForm: React.FC<RunReportForm> = ({ closePanel }) => {
              setTimeout(() => {
                showSnackbar({
                  kind: 'success',
@@ -551,6 +754,23 @@ index fdb470a..cb45c56 100644
                });
                closePanel();
                setIsSubmitting(false);
+@@ -128,7 +132,7 @@ const RunReportForm: React.FC<RunReportForm> = ({ closePanel }) => {
+           },
+         );
+     },
+-    [closePanel, reportParameters, reportUuid, renderModeUuid, t],
++    [closePanel, reportParameters, reportUuid, renderModeUuid, t, currentReport, isFormValid, isSubmitting],
+   );
+ 
+   return (
+@@ -156,6 +160,7 @@ const RunReportForm: React.FC<RunReportForm> = ({ closePanel }) => {
+       </div>
+       <div id="reportParametersDiv" className={styles.runReportInnerDivElement}>
+         {currentReport?.parameters?.map((parameter) => {
++          if (isStructured(parameter.type)) return <StructuredParameterInput key={parameter.name + reportUuid} parameter={parameter} value={reportParameters[parameter.name]} onChange={(value) => setReportParameters((state) => ({ ...state, [parameter.name]: value }))} />;
+           return parameter.type === 'java.util.Date' ? (
+             <ReportParameter
+               key={parameter.name + reportUuid}
 diff --git a/packages/esm-reports-app/src/components/simple-cron-editor/commons.ts b/packages/esm-reports-app/src/components/simple-cron-editor/commons.ts
 index 6912847..7ff2890 100644
 --- a/packages/esm-reports-app/src/components/simple-cron-editor/commons.ts
@@ -585,6 +805,124 @@ index 1eb8402..389bed6 100644
        time: { hours: parseInt(openMRSCron.hours), minutes: parseInt(openMRSCron.minutes) },
        cron: null,
      };
+diff --git a/packages/esm-reports-app/src/components/structured-parameter.test.ts b/packages/esm-reports-app/src/components/structured-parameter.test.ts
+new file mode 100644
+index 0000000..66d5130
+--- /dev/null
++++ b/packages/esm-reports-app/src/components/structured-parameter.test.ts
+@@ -0,0 +1,24 @@
++import { describe, expect, it } from 'vitest';
++import { parameterPayload, parametersValid, structuredError, structuredTypes } from './structured-parameter';
++
++describe('structured parameter submission', () => {
++  for (const type of structuredTypes) {
++    it.each([undefined, null, '', '  \n\t'])('normalizes optional blank %s for ' + type, (value) => {
++      const parameters = [{ name: 'columns', type }];
++      expect(structuredError(value, type)).toBe('');
++      expect(parametersValid(parameters, { columns: value })).toBe(true);
++      expect(parameterPayload(parameters, { columns: value, memo: 'preserved' })).toEqual({ columns: [], memo: 'preserved' });
++      expect(parametersValid([{ ...parameters[0], required: true }], { columns: value })).toBe(false);
++    });
++  }
++  it('retains typed arrays and rejects malformed or wrong-shaped JSON', () => {
++    const type = structuredTypes[1];
++    const parameters = [{ name: 'sorts', type }];
++    const sorts = [{ column: 'ID', direction: 'ASC' }];
++    expect(parameterPayload(parameters, { sorts })).toEqual({ sorts });
++    expect(parameterPayload(parameters, { sorts: JSON.stringify(sorts) })).toEqual({ sorts });
++    for (const value of ['{bad', '{}', '[{"column":"ID","direction":"INVALID"}]']) {
++      expect(parametersValid(parameters, { sorts: value })).toBe(false);
++    }
++  });
++});
+diff --git a/packages/esm-reports-app/src/components/structured-parameter.tsx b/packages/esm-reports-app/src/components/structured-parameter.tsx
+new file mode 100644
+index 0000000..aabb800
+--- /dev/null
++++ b/packages/esm-reports-app/src/components/structured-parameter.tsx
+@@ -0,0 +1,71 @@
++import React from 'react';
++import { TextArea } from '@carbon/react';
++
++export const structuredTypes = [
++  'org.openmrs.module.reporting.dataset.column.definition.RowPerObjectColumnDefinition',
++  'org.openmrs.module.reporting.common.SortCriteria',
++];
++
++export interface ParameterShape { name: string; type: string; label?: string; required?: boolean; }
++export function isStructured(type: string): boolean { return structuredTypes.includes(type); }
++export function structuredText(value: unknown): string {
++  return typeof value === 'string' ? value : value == null ? '' : JSON.stringify(value, null, 2);
++}
++export function structuredError(value: unknown, type?: string): string {
++  if (value == null || (typeof value === 'string' && !value.trim())) return '';
++  try {
++    const parsed: unknown = typeof value === 'string' ? JSON.parse(value) : value;
++    if (!Array.isArray(parsed) || parsed.some((item) => !item || typeof item !== 'object' || Array.isArray(item))) {
++      return 'Enter a JSON array of objects.';
++    }
++    const names = new Set<string>();
++    for (const item of parsed as Record<string, unknown>[]) {
++      const sort = type?.endsWith('.SortCriteria');
++      const allowed = sort ? ['column', 'direction'] : ['name', 'uuid', 'mappings', 'converters'];
++      if (Object.keys(item).some((key) => !allowed.includes(key))) return 'Remove unsupported object fields.';
++      const name = item[sort ? 'column' : 'name'];
++      if (typeof name !== 'string' || !name.trim() || names.has(name.trim())) return 'Use nonempty, unique column names.';
++      names.add(name.trim());
++      if (sort) {
++        if (!['ASC', 'DESC'].includes(String(item.direction))) return 'Sort direction must be ASC or DESC.';
++      } else {
++        if (typeof item.uuid !== 'string' || !item.uuid.trim()) return 'Each column needs a saved definition UUID.';
++        if (item.mappings != null && (typeof item.mappings !== 'object' || Array.isArray(item.mappings))) return 'Mappings must be an object.';
++        if (item.converters != null && (!Array.isArray(item.converters) || item.converters.some((converter) =>
++          !converter || typeof converter !== 'object' || typeof converter.type !== 'string' ||
++          Object.keys(converter).some((key) => !['type', 'properties'].includes(key)) ||
++          (converter.properties != null && (typeof converter.properties !== 'object' || Array.isArray(converter.properties)))))) return 'Converters need a type and properties object.';
++      }
++    }
++    return '';
++  } catch { return 'Enter a valid JSON array of objects.'; }
++}
++export function parametersValid(parameters: ParameterShape[], values: Record<string, unknown>): boolean {
++  return parameters.every((parameter) => {
++    const value = values[parameter.name];
++    const present = value != null && (typeof value !== 'string' || !!value.trim());
++    return (!parameter.required || present) &&
++      (!isStructured(parameter.type) || !structuredError(value, parameter.type));
++  });
++}
++export function parameterPayload(parameters: ParameterShape[], values: Record<string, unknown>): Record<string, unknown> {
++  const result = { ...values };
++  parameters.forEach((parameter) => {
++    const value = result[parameter.name];
++    if (isStructured(parameter.type) && (value == null || typeof value === 'string')) {
++      result[parameter.name] = typeof value === 'string' && value.trim() ? JSON.parse(value) : [];
++    }
++  });
++  return result;
++}
++export const StructuredParameterInput: React.FC<{
++  parameter: ParameterShape; value: unknown; onChange: (value: string) => void;
++}> = ({ parameter, value, onChange }) => {
++  const error = structuredError(value, parameter.type);
++  return <div style={{textAlign: 'left', width: '100%'}}><TextArea id={parameter.name} name={parameter.name} labelText={parameter.label || parameter.name}
++    rows={6} value={structuredText(value)} onChange={(event) => onChange(event.target.value)}
++    helperText={parameter.type.endsWith('.SortCriteria')
++      ? 'JSON sort rules: [{"column":"ID","direction":"DESC"}]. Directions: ASC or DESC. Use [] for no sorting.'
++      : 'JSON columns: [{"name":"ID","uuid":"<saved-definition-uuid>","mappings":{},"converters":[]}]. Use unique names, saved definition UUIDs and typed parameter mappings; [] means no columns.'}
++    invalid={!!error} invalidText={error} /></div>;
++};
+diff --git a/packages/esm-reports-app/src/types/report-request.ts b/packages/esm-reports-app/src/types/report-request.ts
+index 14c78f3..77d86d9 100644
+--- a/packages/esm-reports-app/src/types/report-request.ts
++++ b/packages/esm-reports-app/src/types/report-request.ts
+@@ -4,5 +4,5 @@ export interface ReportRequest {
+   renderingMode: {
+     argument: string;
+   };
+-  parameterMappings: Record<string, string>;
++  parameterMappings: Record<string, unknown>;
+ }
 diff --git a/packages/esm-reports-app/src/utils/openmrs-cron-utils.test.ts b/packages/esm-reports-app/src/utils/openmrs-cron-utils.test.ts
 new file mode 100644
 index 0000000..3d96ddd

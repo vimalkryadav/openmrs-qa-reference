@@ -46,6 +46,21 @@
       "url": "https://github.com/openmrs/openmrs-module-openconceptlab.git",
       "ref": "4d7cec5702f106f418dc11ec03b82cd73ffc8de0",
       "version": "3.1.0"
+    },
+    "reportingrest": {
+      "url": "https://github.com/openmrs/openmrs-module-reportingrest.git",
+      "ref": "16bf6260c30c3ec18c6e4a3b6eb02c1b9b87cca5",
+      "version": "2.0.0"
+    },
+    "calculation": {
+      "url": "https://github.com/openmrs/openmrs-module-calculation.git",
+      "ref": "8cf6cdd7cd4b9c490b67cccebf57b2e71c3c882a",
+      "version": "2.0.0"
+    },
+    "owa": {
+      "url": "https://github.com/openmrs/openmrs-module-owa.git",
+      "ref": "da83fab0e8333da489dc5e69478f9d1049aa8e9e",
+      "version": "1.15.0"
     }
   },
   "runtime": {
